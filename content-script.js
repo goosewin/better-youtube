@@ -39,6 +39,22 @@ const shortsSelectors = {
   },
 };
 
+const exploreSelectors = {
+  navigation: {
+    sections: [
+      "ytd-guide-section-renderer",
+      "ytd-guide-collapsible-section-entry-renderer",
+    ],
+    titles: [
+      "#guide-section-title",
+      "h3#guide-section-title",
+      "yt-formatted-string#title",
+      "h3#title",
+      "span#title",
+    ],
+  },
+};
+
 const moreFromYouTubeSelectors = {
   sections: [
     "ytd-rich-section-renderer",
@@ -51,6 +67,7 @@ const moreFromYouTubeSelectors = {
 
 window.BetterYouTubeSelectors = {
   shorts: shortsSelectors,
+  explore: exploreSelectors,
   moreFromYouTube: moreFromYouTubeSelectors,
 };
 window.BetterYouTubeExtensionId = chrome?.runtime?.id ?? null;
@@ -86,10 +103,52 @@ const revealShorts = (root = document) => {
     });
 };
 
-const MORE_FROM_YOUTUBE_TITLE = "more from youtube";
-
 const normalizeTitleText = (value) =>
   value ? value.replace(/\s+/g, " ").trim().toLowerCase() : "";
+
+const EXPLORE_SECTION_TITLE = "explore";
+
+const findExploreSections = (root = document) => {
+  const titleSelector = exploreSelectors.navigation.titles.join(",");
+  const sectionSelector = exploreSelectors.navigation.sections.join(",");
+  const sections = new Set();
+
+  root.querySelectorAll(titleSelector).forEach((title) => {
+    const normalized = normalizeTitleText(title?.textContent ?? "");
+    if (normalized !== EXPLORE_SECTION_TITLE) {
+      return;
+    }
+    const section = title.closest(sectionSelector);
+    if (section) {
+      sections.add(section);
+    }
+  });
+
+  return Array.from(sections);
+};
+
+const hideExplore = (root = document) => {
+  findExploreSections(root).forEach((section) => {
+    if (section && section.style.display !== "none") {
+      section.style.display = "none";
+      section.setAttribute("data-better-youtube-explore-hidden", "true");
+    }
+  });
+};
+
+const revealExplore = (root = document) => {
+  root
+    .querySelectorAll('[data-better-youtube-explore-hidden="true"]')
+    .forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.style.removeProperty("display");
+      element.removeAttribute("data-better-youtube-explore-hidden");
+    });
+};
+
+const MORE_FROM_YOUTUBE_TITLE = "more from youtube";
 
 const findMoreFromYouTubeSections = (root = document) => {
   const titleSelector = moreFromYouTubeSelectors.titles.join(",");
@@ -135,6 +194,9 @@ const hideEnabledContent = (root = document) => {
   if (shortsEnabled) {
     hideShorts(root);
   }
+  if (exploreEnabled) {
+    hideExplore(root);
+  }
   if (moreFromYouTubeEnabled) {
     hideMoreFromYouTube(root);
   }
@@ -147,6 +209,7 @@ let observerScheduled = false;
 let observerEnabled = false;
 let domReadyListenerAttached = false;
 let shortsEnabled = false;
+let exploreEnabled = false;
 let moreFromYouTubeEnabled = false;
 
 const scheduleHideContent = () => {
@@ -216,7 +279,8 @@ const normalizeEnabledValue = (value) =>
   value === undefined ? true : Boolean(value);
 
 const updateObserverState = () => {
-  const shouldEnableObserver = shortsEnabled || moreFromYouTubeEnabled;
+  const shouldEnableObserver =
+    shortsEnabled || exploreEnabled || moreFromYouTubeEnabled;
   setObserverEnabled(shouldEnableObserver);
 };
 
@@ -236,6 +300,16 @@ const setMoreFromYouTubeEnabled = (enabled) => {
     hideMoreFromYouTube(document);
   } else {
     revealMoreFromYouTube(document);
+  }
+  updateObserverState();
+};
+
+const setExploreEnabled = (enabled) => {
+  exploreEnabled = Boolean(enabled);
+  if (exploreEnabled) {
+    hideExplore(document);
+  } else {
+    revealExplore(document);
   }
   updateObserverState();
 };

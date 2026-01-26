@@ -48,7 +48,7 @@ When the Explore toggle changes, apply or remove the UI hiding behavior without 
   * Selector set targets Explore section reliably in navigation.
   * Hide and reveal paths mirror existing Shorts behavior and respect enable state.
 - **Dependencies** None
-- [ ] EX-1 Add Explore selectors and hide/reveal logic in content script
+- [x] EX-1 Add Explore selectors and hide/reveal logic in content script
 
 ### Task EX-2
 
