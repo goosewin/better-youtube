@@ -88,13 +88,34 @@ const errorStateTextSnippets = [
   "try again later",
 ];
 
-window.BetterYouTubeSelectors = {
-  shorts: shortsSelectors,
-  explore: exploreSelectors,
-  moreFromYouTube: moreFromYouTubeSelectors,
-  homeTopicTabs: homeTopicTabsSelectors,
-};
+window.BetterYouTubeSelectors = shortsSelectors;
 window.BetterYouTubeExtensionId = chrome?.runtime?.id ?? null;
+
+const SHORTS_SELECTORS_ATTRIBUTE = "data-better-youtube-shorts-selectors";
+const EXTENSION_ID_ATTRIBUTE = "data-better-youtube-extension-id";
+
+const writePageMetadata = () => {
+  const root = document.documentElement;
+  if (!root) {
+    return false;
+  }
+  try {
+    root.setAttribute(
+      SHORTS_SELECTORS_ATTRIBUTE,
+      JSON.stringify(shortsSelectors)
+    );
+    root.setAttribute(EXTENSION_ID_ATTRIBUTE, chrome?.runtime?.id ?? "");
+    return true;
+  } catch (error) {
+    return false;
+  }
+};
+
+if (!writePageMetadata()) {
+  document.addEventListener("DOMContentLoaded", writePageMetadata, {
+    once: true,
+  });
+}
 
 const hideShorts = (root = document) => {
   const selectors = Object.values(shortsSelectors).flatMap((group) =>
@@ -129,6 +150,22 @@ const revealShorts = (root = document) => {
 
 const normalizeTitleText = (value) =>
   value ? value.replace(/\s+/g, " ").trim().toLowerCase() : "";
+
+const isElementVisible = (element) => {
+  if (!element) {
+    return false;
+  }
+  const style = getComputedStyle(element);
+  if (
+    style.display === "none" ||
+    style.visibility === "hidden" ||
+    style.opacity === "0"
+  ) {
+    return false;
+  }
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0 && rect.height > 0;
+};
 
 const EXPLORE_SECTION_TITLE = "explore";
 
@@ -255,11 +292,14 @@ const revealAllHiddenContent = (root = document) => {
 const isYouTubeErrorState = (root = document) => {
   const selector = errorStateSelectors.join(",");
   try {
-    if (root.querySelector(selector)) {
-      return true;
+    const errorNodes = root.querySelectorAll(selector);
+    for (const element of errorNodes) {
+      if (isElementVisible(element)) {
+        return true;
+      }
     }
     const errorRoot = root.querySelector("#error-screen, ytd-error-screen");
-    if (!errorRoot) {
+    if (!errorRoot || !isElementVisible(errorRoot)) {
       return false;
     }
     const normalized = normalizeTitleText(errorRoot.textContent ?? "");
@@ -781,14 +821,19 @@ const normalizeEnabledValueWithDefault = (value, defaultValue) =>
   value === undefined ? Boolean(defaultValue) : Boolean(value);
 
 const updateObserverState = () => {
-  const shouldEnableObserver = !errorStateActive && shortsEnabled;
+  const shouldEnableObserver =
+    !errorStateActive &&
+    (shortsEnabled ||
+      exploreEnabled ||
+      moreFromYouTubeEnabled ||
+      homeTopicTabsEnabled);
   setObserverEnabled(shouldEnableObserver);
 };
 
 const setShortsEnabled = (enabled) => {
   shortsEnabled = Boolean(enabled);
   if (!shortsEnabled) {
-    revealAllHiddenContent(document);
+    revealShorts(document);
     updateObserverState();
     return;
   }
@@ -831,6 +876,7 @@ const setExploreEnabled = (enabled) => {
 const loadEnabledState = () => {
   if (!chrome?.storage?.sync) {
     setShortsEnabled(true);
+    setExploreEnabled(true);
     setMoreFromYouTubeEnabled(true);
     setHomeTopicTabsEnabled(false);
     return;

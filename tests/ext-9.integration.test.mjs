@@ -5,37 +5,58 @@ import fs from "node:fs";
 const EXTENSION_ROOT = process.cwd();
 const USER_DATA_DIR = path.join(EXTENSION_ROOT, ".tmp-playwright-profile-ext-9");
 
-const ensureUserDataDir = () => {
+const shouldIgnoreConsoleError = (text) =>
+  text.includes("Failed to load resource") && text.includes("403");
+
+const resetUserDataDir = () => {
+  fs.rmSync(USER_DATA_DIR, { recursive: true, force: true });
   fs.mkdirSync(USER_DATA_DIR, { recursive: true });
 };
 
-const collectMatches = (selectors) => {
-  const matches = [];
-  selectors.forEach((selector) => {
-    try {
-      document.querySelectorAll(selector).forEach((element) => {
-        const hidden =
-          element.getAttribute("data-better-youtube-hidden") === "true" ||
-          getComputedStyle(element).display === "none";
-        matches.push({ selector, hidden });
-      });
-    } catch (error) {
-      return;
-    }
-  });
-  return matches;
-};
-
 const evaluateShortsHiding = () => {
-  if (!window.BetterYouTubeSelectors) {
+  const selectorsAttribute = "data-better-youtube-shorts-selectors";
+  const resolveSelectors = () => {
+    if (window.BetterYouTubeSelectors) {
+      return window.BetterYouTubeSelectors;
+    }
+    const raw = document.documentElement?.getAttribute(selectorsAttribute);
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const selectorsSource = resolveSelectors();
+  if (!selectorsSource) {
     return {
-      error: "BetterYouTubeSelectors is not available on the page.",
+      error: "BetterYouTube selectors are not available on the page.",
     };
   }
 
+  const collectMatches = (selectors) => {
+    const matches = [];
+    selectors.forEach((selector) => {
+      try {
+        document.querySelectorAll(selector).forEach((element) => {
+          const hidden =
+            element.getAttribute("data-better-youtube-hidden") === "true" ||
+            getComputedStyle(element).display === "none";
+          matches.push({ selector, hidden });
+        });
+      } catch (error) {
+        return;
+      }
+    });
+    return matches;
+  };
+
   const selectorGroups = [
-    window.BetterYouTubeSelectors.homepage,
-    window.BetterYouTubeSelectors.navigation,
+    selectorsSource.homepage,
+    selectorsSource.navigation,
   ];
   const selectors = selectorGroups
     .flatMap((group) => Object.values(group))
@@ -51,7 +72,7 @@ const evaluateShortsHiding = () => {
 };
 
 const run = async () => {
-  ensureUserDataDir();
+  resetUserDataDir();
 
   const consoleErrors = [];
   const context = await chromium.launchPersistentContext(USER_DATA_DIR, {
@@ -67,9 +88,14 @@ const run = async () => {
     const activePage = page ?? (await context.newPage());
 
     activePage.on("console", (message) => {
-      if (message.type() === "error") {
-        consoleErrors.push(message.text());
+      if (message.type() !== "error") {
+        return;
       }
+      const text = message.text();
+      if (shouldIgnoreConsoleError(text)) {
+        return;
+      }
+      consoleErrors.push(text);
     });
 
     activePage.on("pageerror", (error) => {

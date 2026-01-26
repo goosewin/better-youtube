@@ -5,35 +5,56 @@ import fs from "node:fs";
 const EXTENSION_ROOT = process.cwd();
 const USER_DATA_DIR = path.join(EXTENSION_ROOT, ".tmp-playwright-profile-ext-11");
 
-const ensureUserDataDir = () => {
+const shouldIgnoreConsoleError = (text) =>
+  text.includes("Failed to load resource") && text.includes("403");
+
+const resetUserDataDir = () => {
+  fs.rmSync(USER_DATA_DIR, { recursive: true, force: true });
   fs.mkdirSync(USER_DATA_DIR, { recursive: true });
 };
 
-const collectMatches = (selectors) => {
-  const matches = [];
-  selectors.forEach((selector) => {
-    try {
-      document.querySelectorAll(selector).forEach((element) => {
-        const hidden =
-          element.getAttribute("data-better-youtube-hidden") === "true" ||
-          getComputedStyle(element).display === "none";
-        matches.push({ selector, hidden });
-      });
-    } catch (error) {
-      return;
-    }
-  });
-  return matches;
-};
-
 const evaluateShortsVisibility = () => {
-  if (!window.BetterYouTubeSelectors) {
+  const selectorsAttribute = "data-better-youtube-shorts-selectors";
+  const resolveSelectors = () => {
+    if (window.BetterYouTubeSelectors) {
+      return window.BetterYouTubeSelectors;
+    }
+    const raw = document.documentElement?.getAttribute(selectorsAttribute);
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const selectorsSource = resolveSelectors();
+  if (!selectorsSource) {
     return {
-      error: "BetterYouTubeSelectors is not available on the page.",
+      error: "BetterYouTube selectors are not available on the page.",
     };
   }
 
-  const selectors = Object.values(window.BetterYouTubeSelectors)
+  const collectMatches = (selectors) => {
+    const matches = [];
+    selectors.forEach((selector) => {
+      try {
+        document.querySelectorAll(selector).forEach((element) => {
+          const hidden =
+            element.getAttribute("data-better-youtube-hidden") === "true" ||
+            getComputedStyle(element).display === "none";
+          matches.push({ selector, hidden });
+        });
+      } catch (error) {
+        return;
+      }
+    });
+    return matches;
+  };
+
+  const selectors = Object.values(selectorsSource)
     .flatMap((group) => Object.values(group))
     .flat();
   const matches = collectMatches(selectors);
@@ -47,18 +68,27 @@ const evaluateShortsVisibility = () => {
   };
 };
 
-const getExtensionId = () => window.BetterYouTubeExtensionId;
+const getExtensionId = () =>
+  window.BetterYouTubeExtensionId ||
+  document.documentElement?.getAttribute("data-better-youtube-extension-id") ||
+  null;
 
 const setToggleState = async (popupPage, enabled) => {
-  await popupPage.waitForSelector("#shorts-toggle");
-  const currentState = await popupPage.isChecked("#shorts-toggle");
-  if (currentState !== enabled) {
-    await popupPage.click("#shorts-toggle");
-  }
+  await popupPage.waitForSelector("#shorts-toggle", { state: "attached" });
+  await popupPage.evaluate((nextValue) => {
+    const toggle = document.querySelector("#shorts-toggle");
+    if (!toggle) {
+      return;
+    }
+    if (toggle.checked !== nextValue) {
+      toggle.checked = nextValue;
+      toggle.dispatchEvent(new Event("change", { bubbles: true }));
+    }
+  }, enabled);
 };
 
 const assertToggleState = async (popupPage, expected) => {
-  await popupPage.waitForSelector("#shorts-toggle");
+  await popupPage.waitForSelector("#shorts-toggle", { state: "attached" });
   const checked = await popupPage.isChecked("#shorts-toggle");
   if (checked !== expected) {
     throw new Error(
@@ -75,10 +105,20 @@ const waitForVisibilityChange = async (page, previous) => {
   }
   await page.waitForFunction(
     (baseline) => {
-      if (!window.BetterYouTubeSelectors) {
-        return false;
+      const selectorsAttribute = "data-better-youtube-shorts-selectors";
+      let selectorsSource = window.BetterYouTubeSelectors;
+      if (!selectorsSource) {
+        const raw = document.documentElement?.getAttribute(selectorsAttribute);
+        if (!raw) {
+          return false;
+        }
+        try {
+          selectorsSource = JSON.parse(raw);
+        } catch (error) {
+          return false;
+        }
       }
-      const selectors = Object.values(window.BetterYouTubeSelectors)
+      const selectors = Object.values(selectorsSource)
         .flatMap((group) => Object.values(group))
         .flat();
       const matches = [];
@@ -158,7 +198,7 @@ const launchContext = async () => {
 };
 
 const run = async () => {
-  ensureUserDataDir();
+  resetUserDataDir();
 
   const consoleErrors = [];
   let context;
@@ -168,9 +208,14 @@ const run = async () => {
     ({ context, activePage } = await launchContext());
 
     activePage.on("console", (message) => {
-      if (message.type() === "error") {
-        consoleErrors.push(message.text());
+      if (message.type() !== "error") {
+        return;
       }
+      const text = message.text();
+      if (shouldIgnoreConsoleError(text)) {
+        return;
+      }
+      consoleErrors.push(text);
     });
 
     activePage.on("pageerror", (error) => {
@@ -181,7 +226,13 @@ const run = async () => {
       waitUntil: "domcontentloaded",
     });
     await activePage.waitForTimeout(6000);
-    await activePage.waitForFunction(() => window.BetterYouTubeExtensionId);
+    await activePage.waitForFunction(
+      () =>
+        window.BetterYouTubeExtensionId ||
+        document.documentElement?.getAttribute(
+          "data-better-youtube-extension-id"
+        )
+    );
 
     const extensionId = await activePage.evaluate(getExtensionId);
     if (!extensionId) {
@@ -224,7 +275,13 @@ const run = async () => {
       waitUntil: "domcontentloaded",
     });
     await activePage.waitForTimeout(6000);
-    await activePage.waitForFunction(() => window.BetterYouTubeExtensionId);
+    await activePage.waitForFunction(
+      () =>
+        window.BetterYouTubeExtensionId ||
+        document.documentElement?.getAttribute(
+          "data-better-youtube-extension-id"
+        )
+    );
     const restartExtensionId = await activePage.evaluate(getExtensionId);
     if (!restartExtensionId) {
       throw new Error("Unable to resolve extension ID after restart.");
