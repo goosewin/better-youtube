@@ -148,7 +148,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Popup has clean, minimal styling.
   * Popup dimensions are appropriate (max 300px width).
 - **Dependencies** EXT-1
-- [ ] EXT-6 Create popup HTML with toggle switch UI
+- [x] EXT-6 Create popup HTML with toggle switch UI
 
 ### Task EXT-7
 
