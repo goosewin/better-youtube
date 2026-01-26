@@ -40,3 +40,24 @@ const shortsSelectors = {
 };
 
 window.BetterYouTubeSelectors = shortsSelectors;
+
+const hideShorts = (root = document) => {
+  const selectors = Object.values(shortsSelectors).flatMap((group) =>
+    Object.values(group).flat()
+  );
+
+  selectors.forEach((selector) => {
+    try {
+      root.querySelectorAll(selector).forEach((element) => {
+        if (element && element.style.display !== "none") {
+          element.style.display = "none";
+          element.setAttribute("data-better-youtube-hidden", "true");
+        }
+      });
+    } catch (error) {
+      return;
+    }
+  });
+};
+
+window.BetterYouTubeHideShorts = hideShorts;

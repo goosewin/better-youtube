@@ -110,7 +110,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Hidden elements do not reappear until page reload or toggle change.
   * No console errors when selectors match zero elements.
 - **Dependencies** EXT-2
-- [ ] EXT-3 Implement Shorts hiding logic in content script
+- [x] EXT-3 Implement Shorts hiding logic in content script
 
 ### Task EXT-4
 
