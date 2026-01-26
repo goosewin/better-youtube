@@ -197,7 +197,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Navigate to subscriptions and verify Shorts are hidden.
   * Dynamic loading of additional results maintains hiding.
 - **Dependencies** EXT-9
-- [ ] EXT-10 Integration test: verify Shorts hiding in search and subscriptions
+- [x] EXT-10 Integration test: verify Shorts hiding in search and subscriptions
 
 ### Task EXT-11
 
