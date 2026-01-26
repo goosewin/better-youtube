@@ -160,7 +160,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Toggle change event updates chrome.storage.sync.
   * Storage update triggers content script to show/hide Shorts.
 - **Dependencies** EXT-5, EXT-6
-- [ ] EXT-7 Implement popup JavaScript for toggle functionality
+- [x] EXT-7 Implement popup JavaScript for toggle functionality
 
 ### Task EXT-8
 
