@@ -59,7 +59,7 @@ When the Explore toggle changes, apply or remove the UI hiding behavior without 
   * Toggle label and input are added to the UI with consistent styling.
   * Popup storage handling reads and writes the Explore state correctly.
 - **Dependencies** EX-1
-- [ ] EX-2 Add Explore toggle UI and storage wiring in popup
+- [x] EX-2 Add Explore toggle UI and storage wiring in popup
 
 ### Task EX-3
 

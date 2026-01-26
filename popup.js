@@ -1,6 +1,7 @@
 "use strict";
 
 const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
+const EXPLORE_STORAGE_KEY = "betterYouTubeHideExploreEnabled";
 const MORE_FROM_YOUTUBE_STORAGE_KEY =
   "betterYouTubeHideMoreFromYouTubeEnabled";
 
@@ -8,6 +9,7 @@ const normalizeEnabledValue = (value) =>
   value === undefined ? true : Boolean(value);
 
 const getShortsToggle = () => document.getElementById("shorts-toggle");
+const getExploreToggle = () => document.getElementById("explore-toggle");
 const getMoreFromToggle = () =>
   document.getElementById("more-from-youtube-toggle");
 
@@ -20,9 +22,11 @@ const setToggleState = (toggle, enabled) => {
 
 const loadToggleState = () => {
   const shortsToggle = getShortsToggle();
+  const exploreToggle = getExploreToggle();
   const moreFromToggle = getMoreFromToggle();
   if (!chrome?.storage?.sync) {
     setToggleState(shortsToggle, true);
+    setToggleState(exploreToggle, true);
     setToggleState(moreFromToggle, true);
     return;
   }
@@ -30,12 +34,17 @@ const loadToggleState = () => {
   chrome.storage.sync.get(
     {
       [SHORTS_STORAGE_KEY]: true,
+      [EXPLORE_STORAGE_KEY]: true,
       [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
     },
     (result) => {
       setToggleState(
         shortsToggle,
         normalizeEnabledValue(result[SHORTS_STORAGE_KEY])
+      );
+      setToggleState(
+        exploreToggle,
+        normalizeEnabledValue(result[EXPLORE_STORAGE_KEY])
       );
       setToggleState(
         moreFromToggle,
@@ -51,6 +60,14 @@ const handleShortsToggleChange = (event) => {
   }
   const nextValue = Boolean(event.target.checked);
   chrome.storage.sync.set({ [SHORTS_STORAGE_KEY]: nextValue });
+};
+
+const handleExploreToggleChange = (event) => {
+  if (!chrome?.storage?.sync) {
+    return;
+  }
+  const nextValue = Boolean(event.target.checked);
+  chrome.storage.sync.set({ [EXPLORE_STORAGE_KEY]: nextValue });
 };
 
 const handleMoreFromToggleChange = (event) => {
@@ -72,6 +89,13 @@ const handleStorageChanges = (changes, areaName) => {
       normalizeEnabledValue(changes[SHORTS_STORAGE_KEY].newValue)
     );
   }
+  if (changes[EXPLORE_STORAGE_KEY]) {
+    const exploreToggle = getExploreToggle();
+    setToggleState(
+      exploreToggle,
+      normalizeEnabledValue(changes[EXPLORE_STORAGE_KEY].newValue)
+    );
+  }
   if (changes[MORE_FROM_YOUTUBE_STORAGE_KEY]) {
     const moreFromToggle = getMoreFromToggle();
     setToggleState(
@@ -85,6 +109,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const shortsToggle = getShortsToggle();
   if (shortsToggle) {
     shortsToggle.addEventListener("change", handleShortsToggleChange);
+  }
+  const exploreToggle = getExploreToggle();
+  if (exploreToggle) {
+    exploreToggle.addEventListener("change", handleExploreToggleChange);
   }
   const moreFromToggle = getMoreFromToggle();
   if (moreFromToggle) {
