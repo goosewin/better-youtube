@@ -59,7 +59,7 @@ Persist the user's last selected speed in extension storage and restore it on ne
   * Slider reflects current playback speed and supports 0.1x steps.
   * Buttons step the speed up or down within bounds.
 - **Dependencies** EXT-1
-- [ ] EXT-2 Implement injected speed controls
+- [x] EXT-2 Implement injected speed controls
 
 ### Task EXT-3
 

@@ -417,6 +417,199 @@ const playbackSpeedSelectors = {
   video: ["video.html5-main-video", "#movie_player video", "ytd-player video"],
 };
 
+const PLAYBACK_SPEED_MIN = 0.1;
+const PLAYBACK_SPEED_MAX = 5;
+const PLAYBACK_SPEED_STEP = 0.1;
+const PLAYBACK_SPEED_STYLE_ID = "better-youtube-playback-speed-style";
+
+const playbackSpeedState = {
+  container: null,
+  slider: null,
+  label: null,
+  decrementButton: null,
+  incrementButton: null,
+  video: null,
+  onRateChange: null,
+};
+
+const clampPlaybackSpeed = (value) => {
+  const numeric = Number(value);
+  if (Number.isNaN(numeric)) {
+    return 1;
+  }
+  return Math.min(PLAYBACK_SPEED_MAX, Math.max(PLAYBACK_SPEED_MIN, numeric));
+};
+
+const normalizePlaybackSpeed = (value) =>
+  Math.round(value / PLAYBACK_SPEED_STEP) * PLAYBACK_SPEED_STEP;
+
+const formatPlaybackSpeed = (value) => `${value.toFixed(1)}x`;
+
+const updatePlaybackSpeedUI = (value) => {
+  if (!playbackSpeedState.slider || !playbackSpeedState.label) {
+    return;
+  }
+  const clamped = clampPlaybackSpeed(value);
+  playbackSpeedState.slider.value = clamped.toFixed(1);
+  playbackSpeedState.label.textContent = formatPlaybackSpeed(clamped);
+  if (playbackSpeedState.decrementButton) {
+    playbackSpeedState.decrementButton.disabled = clamped <= PLAYBACK_SPEED_MIN;
+  }
+  if (playbackSpeedState.incrementButton) {
+    playbackSpeedState.incrementButton.disabled = clamped >= PLAYBACK_SPEED_MAX;
+  }
+};
+
+const setPlaybackSpeed = (value) => {
+  if (!playbackSpeedState.video) {
+    return;
+  }
+  const clamped = clampPlaybackSpeed(value);
+  const normalized = normalizePlaybackSpeed(clamped);
+  playbackSpeedState.video.playbackRate = normalized;
+  updatePlaybackSpeedUI(normalized);
+};
+
+const syncPlaybackSpeedFromVideo = () => {
+  if (!playbackSpeedState.video) {
+    return;
+  }
+  const clamped = clampPlaybackSpeed(playbackSpeedState.video.playbackRate);
+  if (clamped !== playbackSpeedState.video.playbackRate) {
+    playbackSpeedState.video.playbackRate = clamped;
+  }
+  updatePlaybackSpeedUI(clamped);
+};
+
+const ensurePlaybackSpeedStyles = () => {
+  if (document.getElementById(PLAYBACK_SPEED_STYLE_ID)) {
+    return;
+  }
+  const style = document.createElement("style");
+  style.id = PLAYBACK_SPEED_STYLE_ID;
+  style.textContent = `
+    .better-youtube-speed-controls {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 0 6px;
+      height: 28px;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      color: #fff;
+      font-size: 12px;
+      font-family: "YouTube Sans", "Roboto", "Arial", sans-serif;
+      pointer-events: auto;
+    }
+
+    .better-youtube-speed-button {
+      background: rgba(255, 255, 255, 0.15);
+      border: none;
+      color: inherit;
+      height: 20px;
+      width: 20px;
+      border-radius: 50%;
+      font-size: 14px;
+      line-height: 20px;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .better-youtube-speed-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    .better-youtube-speed-slider {
+      width: 90px;
+      accent-color: #ffef6b;
+    }
+
+    .better-youtube-speed-label {
+      min-width: 36px;
+      text-align: right;
+      font-variant-numeric: tabular-nums;
+    }
+  `;
+  document.head?.appendChild(style);
+};
+
+const createPlaybackSpeedControls = () => {
+  const container = document.createElement("div");
+  container.className = "better-youtube-speed-controls";
+  container.setAttribute("data-better-youtube-speed-controls", "true");
+
+  const decrementButton = document.createElement("button");
+  decrementButton.type = "button";
+  decrementButton.className = "better-youtube-speed-button";
+  decrementButton.setAttribute("aria-label", "Decrease playback speed");
+  decrementButton.textContent = "-";
+
+  const slider = document.createElement("input");
+  slider.type = "range";
+  slider.className = "better-youtube-speed-slider";
+  slider.min = PLAYBACK_SPEED_MIN.toFixed(1);
+  slider.max = PLAYBACK_SPEED_MAX.toFixed(1);
+  slider.step = PLAYBACK_SPEED_STEP.toFixed(1);
+  slider.value = "1.0";
+  slider.setAttribute("aria-label", "Playback speed");
+
+  const incrementButton = document.createElement("button");
+  incrementButton.type = "button";
+  incrementButton.className = "better-youtube-speed-button";
+  incrementButton.setAttribute("aria-label", "Increase playback speed");
+  incrementButton.textContent = "+";
+
+  const label = document.createElement("span");
+  label.className = "better-youtube-speed-label";
+  label.textContent = "1.0x";
+
+  container.append(decrementButton, slider, incrementButton, label);
+
+  playbackSpeedState.container = container;
+  playbackSpeedState.slider = slider;
+  playbackSpeedState.label = label;
+  playbackSpeedState.decrementButton = decrementButton;
+  playbackSpeedState.incrementButton = incrementButton;
+
+  slider.addEventListener("input", (event) => {
+    const targetValue = Number(event.target.value);
+    setPlaybackSpeed(targetValue);
+  });
+
+  decrementButton.addEventListener("click", () => {
+    const current = playbackSpeedState.video
+      ? playbackSpeedState.video.playbackRate
+      : Number(playbackSpeedState.slider?.value) || 1;
+    setPlaybackSpeed(current - PLAYBACK_SPEED_STEP);
+  });
+
+  incrementButton.addEventListener("click", () => {
+    const current = playbackSpeedState.video
+      ? playbackSpeedState.video.playbackRate
+      : Number(playbackSpeedState.slider?.value) || 1;
+    setPlaybackSpeed(current + PLAYBACK_SPEED_STEP);
+  });
+
+  return container;
+};
+
+const ensurePlaybackSpeedControls = (player) => {
+  ensurePlaybackSpeedStyles();
+  let container = player.querySelector("[data-better-youtube-speed-controls]");
+  if (!container) {
+    container = createPlaybackSpeedControls();
+    const target =
+      player.querySelector(".ytp-right-controls") ||
+      player.querySelector(".ytp-left-controls") ||
+      player.querySelector(".ytp-chrome-bottom") ||
+      player;
+    target.appendChild(container);
+  }
+  return container;
+};
+
 const findPlaybackSpeedPlayer = () => {
   const selector = playbackSpeedSelectors.player.join(",");
   return document.querySelector(selector);
@@ -437,6 +630,19 @@ const initializePlaybackSpeedControls = (player, video) => {
   if (!player || !video) {
     return;
   }
+  ensurePlaybackSpeedControls(player);
+  if (playbackSpeedState.video !== video) {
+    if (playbackSpeedState.video && playbackSpeedState.onRateChange) {
+      playbackSpeedState.video.removeEventListener(
+        "ratechange",
+        playbackSpeedState.onRateChange
+      );
+    }
+    playbackSpeedState.video = video;
+    playbackSpeedState.onRateChange = syncPlaybackSpeedFromVideo;
+    video.addEventListener("ratechange", playbackSpeedState.onRateChange);
+  }
+  syncPlaybackSpeedFromVideo();
 };
 
 const syncPlaybackSpeedTargets = () => {
