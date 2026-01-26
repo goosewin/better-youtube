@@ -39,7 +39,20 @@ const shortsSelectors = {
   },
 };
 
-window.BetterYouTubeSelectors = shortsSelectors;
+const moreFromYouTubeSelectors = {
+  sections: [
+    "ytd-rich-section-renderer",
+    "ytd-item-section-renderer",
+    "ytd-shelf-renderer",
+    "ytd-rich-shelf-renderer",
+  ],
+  titles: ["h2#title", "span#title", "#title"],
+};
+
+window.BetterYouTubeSelectors = {
+  shorts: shortsSelectors,
+  moreFromYouTube: moreFromYouTubeSelectors,
+};
 window.BetterYouTubeExtensionId = chrome?.runtime?.id ?? null;
 
 const hideShorts = (root = document) => {
@@ -73,21 +86,77 @@ const revealShorts = (root = document) => {
     });
 };
 
+const MORE_FROM_YOUTUBE_TITLE = "more from youtube";
+
+const normalizeTitleText = (value) =>
+  value ? value.replace(/\s+/g, " ").trim().toLowerCase() : "";
+
+const findMoreFromYouTubeSections = (root = document) => {
+  const titleSelector = moreFromYouTubeSelectors.titles.join(",");
+  const sectionSelector = moreFromYouTubeSelectors.sections.join(",");
+  const sections = new Set();
+
+  root.querySelectorAll(titleSelector).forEach((title) => {
+    const normalized = normalizeTitleText(title?.textContent ?? "");
+    if (normalized !== MORE_FROM_YOUTUBE_TITLE) {
+      return;
+    }
+    const section = title.closest(sectionSelector);
+    if (section) {
+      sections.add(section);
+    }
+  });
+
+  return Array.from(sections);
+};
+
+const hideMoreFromYouTube = (root = document) => {
+  findMoreFromYouTubeSections(root).forEach((section) => {
+    if (section && section.style.display !== "none") {
+      section.style.display = "none";
+      section.setAttribute("data-better-youtube-more-from-hidden", "true");
+    }
+  });
+};
+
+const revealMoreFromYouTube = (root = document) => {
+  root
+    .querySelectorAll('[data-better-youtube-more-from-hidden="true"]')
+    .forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.style.removeProperty("display");
+      element.removeAttribute("data-better-youtube-more-from-hidden");
+    });
+};
+
+const hideEnabledContent = (root = document) => {
+  if (shortsEnabled) {
+    hideShorts(root);
+  }
+  if (moreFromYouTubeEnabled) {
+    hideMoreFromYouTube(root);
+  }
+};
+
 window.BetterYouTubeHideShorts = hideShorts;
 
 let observer = null;
 let observerScheduled = false;
 let observerEnabled = false;
 let domReadyListenerAttached = false;
+let shortsEnabled = false;
+let moreFromYouTubeEnabled = false;
 
-const scheduleHideShorts = () => {
+const scheduleHideContent = () => {
   if (!observerEnabled || observerScheduled) {
     return;
   }
   observerScheduled = true;
   window.requestAnimationFrame(() => {
     observerScheduled = false;
-    hideShorts(document);
+    hideEnabledContent(document);
   });
 };
 
@@ -95,7 +164,7 @@ const handleMutations = (mutations) => {
   if (!observerEnabled || !mutations || mutations.length === 0) {
     return;
   }
-  scheduleHideShorts();
+  scheduleHideContent();
 };
 
 const startObserver = () => {
@@ -128,42 +197,90 @@ const setObserverEnabled = (enabled) => {
           domReadyListenerAttached = false;
           if (observerEnabled) {
             startObserver();
-            hideShorts(document);
+            hideEnabledContent(document);
           }
         },
         { once: true }
       );
     }
-    hideShorts(document);
     return;
   }
   stopObserver();
-  revealShorts(document);
 };
 
-const STORAGE_KEY = "betterYouTubeEnabled";
+const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
+const MORE_FROM_YOUTUBE_STORAGE_KEY =
+  "betterYouTubeHideMoreFromYouTubeEnabled";
 
 const normalizeEnabledValue = (value) =>
   value === undefined ? true : Boolean(value);
 
+const updateObserverState = () => {
+  const shouldEnableObserver = shortsEnabled || moreFromYouTubeEnabled;
+  setObserverEnabled(shouldEnableObserver);
+};
+
+const setShortsEnabled = (enabled) => {
+  shortsEnabled = Boolean(enabled);
+  if (shortsEnabled) {
+    hideShorts(document);
+  } else {
+    revealShorts(document);
+  }
+  updateObserverState();
+};
+
+const setMoreFromYouTubeEnabled = (enabled) => {
+  moreFromYouTubeEnabled = Boolean(enabled);
+  if (moreFromYouTubeEnabled) {
+    hideMoreFromYouTube(document);
+  } else {
+    revealMoreFromYouTube(document);
+  }
+  updateObserverState();
+};
+
 const loadEnabledState = () => {
   if (!chrome?.storage?.sync) {
-    setObserverEnabled(true);
+    setShortsEnabled(true);
+    setMoreFromYouTubeEnabled(true);
     return;
   }
 
-  chrome.storage.sync.get({ [STORAGE_KEY]: true }, (result) => {
-    const enabled = normalizeEnabledValue(result[STORAGE_KEY]);
-    setObserverEnabled(enabled);
-  });
+  chrome.storage.sync.get(
+    {
+      [SHORTS_STORAGE_KEY]: true,
+      [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
+    },
+    (result) => {
+      const shortsEnabledValue = normalizeEnabledValue(
+        result[SHORTS_STORAGE_KEY]
+      );
+      const moreFromEnabledValue = normalizeEnabledValue(
+        result[MORE_FROM_YOUTUBE_STORAGE_KEY]
+      );
+      setShortsEnabled(shortsEnabledValue);
+      setMoreFromYouTubeEnabled(moreFromEnabledValue);
+    }
+  );
 };
 
 const handleStorageChanges = (changes, areaName) => {
-  if (areaName !== "sync" || !changes[STORAGE_KEY]) {
+  if (areaName !== "sync") {
     return;
   }
-  const nextValue = normalizeEnabledValue(changes[STORAGE_KEY].newValue);
-  setObserverEnabled(nextValue);
+  if (changes[SHORTS_STORAGE_KEY]) {
+    const nextShortsValue = normalizeEnabledValue(
+      changes[SHORTS_STORAGE_KEY].newValue
+    );
+    setShortsEnabled(nextShortsValue);
+  }
+  if (changes[MORE_FROM_YOUTUBE_STORAGE_KEY]) {
+    const nextMoreFromValue = normalizeEnabledValue(
+      changes[MORE_FROM_YOUTUBE_STORAGE_KEY].newValue
+    );
+    setMoreFromYouTubeEnabled(nextMoreFromValue);
+  }
 };
 
 window.BetterYouTubeSetObserverEnabled = setObserverEnabled;
