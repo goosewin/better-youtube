@@ -70,7 +70,7 @@ Persist the user's last selected speed in extension storage and restore it on ne
   * Persist speed in `chrome.storage.sync` with a new key.
   * Apply saved speed when a new video loads.
 - **Dependencies** EXT-2
-- [ ] EXT-3 Persist and restore playback speed
+- [x] EXT-3 Persist and restore playback speed
 
 ### Task EXT-4
 

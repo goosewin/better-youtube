@@ -421,6 +421,7 @@ const PLAYBACK_SPEED_MIN = 0.1;
 const PLAYBACK_SPEED_MAX = 5;
 const PLAYBACK_SPEED_STEP = 0.1;
 const PLAYBACK_SPEED_STYLE_ID = "better-youtube-playback-speed-style";
+const PLAYBACK_SPEED_STORAGE_KEY = "betterYouTubePlaybackSpeed";
 
 const playbackSpeedState = {
   container: null,
@@ -430,6 +431,8 @@ const playbackSpeedState = {
   incrementButton: null,
   video: null,
   onRateChange: null,
+  lastSavedValue: null,
+  restoreToken: 0,
 };
 
 const clampPlaybackSpeed = (value) => {
@@ -444,6 +447,47 @@ const normalizePlaybackSpeed = (value) =>
   Math.round(value / PLAYBACK_SPEED_STEP) * PLAYBACK_SPEED_STEP;
 
 const formatPlaybackSpeed = (value) => `${value.toFixed(1)}x`;
+
+const persistPlaybackSpeed = (value) => {
+  if (!chrome?.storage?.sync) {
+    return;
+  }
+  const clamped = clampPlaybackSpeed(value);
+  const normalized = normalizePlaybackSpeed(clamped);
+  if (playbackSpeedState.lastSavedValue === normalized) {
+    return;
+  }
+  playbackSpeedState.lastSavedValue = normalized;
+  chrome.storage.sync.set({ [PLAYBACK_SPEED_STORAGE_KEY]: normalized });
+};
+
+const applySavedPlaybackSpeed = (video) => {
+  if (!video) {
+    return;
+  }
+  if (!chrome?.storage?.sync) {
+    syncPlaybackSpeedFromVideo();
+    return;
+  }
+  const token = (playbackSpeedState.restoreToken += 1);
+  chrome.storage.sync.get(
+    { [PLAYBACK_SPEED_STORAGE_KEY]: null },
+    (result) => {
+      if (token !== playbackSpeedState.restoreToken) {
+        return;
+      }
+      if (playbackSpeedState.video !== video) {
+        return;
+      }
+      const saved = result[PLAYBACK_SPEED_STORAGE_KEY];
+      if (typeof saved === "number") {
+        setPlaybackSpeed(saved);
+        return;
+      }
+      syncPlaybackSpeedFromVideo();
+    }
+  );
+};
 
 const updatePlaybackSpeedUI = (value) => {
   if (!playbackSpeedState.slider || !playbackSpeedState.label) {
@@ -468,6 +512,7 @@ const setPlaybackSpeed = (value) => {
   const normalized = normalizePlaybackSpeed(clamped);
   playbackSpeedState.video.playbackRate = normalized;
   updatePlaybackSpeedUI(normalized);
+  persistPlaybackSpeed(normalized);
 };
 
 const syncPlaybackSpeedFromVideo = () => {
@@ -479,6 +524,7 @@ const syncPlaybackSpeedFromVideo = () => {
     playbackSpeedState.video.playbackRate = clamped;
   }
   updatePlaybackSpeedUI(clamped);
+  persistPlaybackSpeed(clamped);
 };
 
 const ensurePlaybackSpeedStyles = () => {
@@ -663,6 +709,7 @@ const syncPlaybackSpeedTargets = () => {
   lastPlaybackSpeedVideo = video;
   lastPlaybackSpeedVideoSrc = videoSrc;
   initializePlaybackSpeedControls(player, video);
+  applySavedPlaybackSpeed(video);
 };
 
 const schedulePlaybackSpeedSync = () => {
