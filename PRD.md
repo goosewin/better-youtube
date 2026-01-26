@@ -172,7 +172,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Icons visually represent the extension purpose.
   * Manifest references icons in the action and icons fields.
 - **Dependencies** EXT-1
-- [ ] EXT-8 Create extension icons in required sizes
+- [x] EXT-8 Create extension icons in required sizes
 
 ### Task EXT-9
 
