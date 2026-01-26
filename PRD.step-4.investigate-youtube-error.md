@@ -49,7 +49,7 @@ The popup surfaces a brief, actionable recovery message and allows the user to d
   * Error detection is based on DOM signals in `content-script.js`.
   * Observer and hiding are disabled on error state and restored on recovery.
 - **Dependencies** None
-- [ ] PRD-1 Add error-state guardrails in content script
+- [x] PRD-1 Add error-state guardrails in content script
 
 ### Task PRD-2
 

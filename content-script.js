@@ -74,6 +74,20 @@ const homeTopicTabsSelectors = {
   },
 };
 
+const errorStateSelectors = [
+  "ytd-error-screen",
+  "#error-screen",
+  "ytd-app[is-error]",
+  "ytd-app[error]",
+  "ytd-page-manager[error]",
+];
+
+const errorStateTextSnippets = [
+  "something went wrong",
+  "an error occurred",
+  "try again later",
+];
+
 window.BetterYouTubeSelectors = {
   shorts: shortsSelectors,
   explore: exploreSelectors,
@@ -231,7 +245,36 @@ const revealHomeTopicTabs = (root = document) => {
     });
 };
 
+const revealAllHiddenContent = (root = document) => {
+  revealShorts(root);
+  revealExplore(root);
+  revealMoreFromYouTube(root);
+  revealHomeTopicTabs(root);
+};
+
+const isYouTubeErrorState = (root = document) => {
+  const selector = errorStateSelectors.join(",");
+  try {
+    if (root.querySelector(selector)) {
+      return true;
+    }
+    const errorRoot = root.querySelector("#error-screen, ytd-error-screen");
+    if (!errorRoot) {
+      return false;
+    }
+    const normalized = normalizeTitleText(errorRoot.textContent ?? "");
+    return errorStateTextSnippets.some((snippet) =>
+      normalized.includes(snippet)
+    );
+  } catch (error) {
+    return false;
+  }
+};
+
 const hideEnabledContent = (root = document) => {
+  if (errorStateActive) {
+    return;
+  }
   if (shortsEnabled) {
     hideShorts(root);
   }
@@ -256,6 +299,47 @@ let shortsEnabled = false;
 let exploreEnabled = false;
 let moreFromYouTubeEnabled = false;
 let homeTopicTabsEnabled = false;
+let errorStateActive = false;
+let errorStatePollTimer = null;
+
+const stopErrorStatePolling = () => {
+  if (!errorStatePollTimer) {
+    return;
+  }
+  window.clearInterval(errorStatePollTimer);
+  errorStatePollTimer = null;
+};
+
+const startErrorStatePolling = () => {
+  if (errorStatePollTimer) {
+    return;
+  }
+  errorStatePollTimer = window.setInterval(() => {
+    if (!isYouTubeErrorState(document)) {
+      setErrorStateActive(false);
+    }
+  }, 2000);
+};
+
+const setErrorStateActive = (nextState) => {
+  const nextValue = Boolean(nextState);
+  if (nextValue === errorStateActive) {
+    return errorStateActive;
+  }
+  errorStateActive = nextValue;
+  if (errorStateActive) {
+    setObserverEnabled(false);
+    revealAllHiddenContent(document);
+    startErrorStatePolling();
+    return errorStateActive;
+  }
+  stopErrorStatePolling();
+  updateObserverState();
+  hideEnabledContent(document);
+  return errorStateActive;
+};
+
+const updateErrorState = () => setErrorStateActive(isYouTubeErrorState(document));
 
 const scheduleHideContent = () => {
   if (!observerEnabled || observerScheduled) {
@@ -269,7 +353,13 @@ const scheduleHideContent = () => {
 };
 
 const handleMutations = (mutations) => {
-  if (!observerEnabled || !mutations || mutations.length === 0) {
+  if (!mutations || mutations.length === 0) {
+    return;
+  }
+  if (updateErrorState()) {
+    return;
+  }
+  if (!observerEnabled) {
     return;
   }
   scheduleHideContent();
@@ -330,13 +420,17 @@ const normalizeEnabledValueWithDefault = (value, defaultValue) =>
 
 const updateObserverState = () => {
   const shouldEnableObserver =
-    shortsEnabled || exploreEnabled || moreFromYouTubeEnabled || homeTopicTabsEnabled;
+    !errorStateActive &&
+    (shortsEnabled ||
+      exploreEnabled ||
+      moreFromYouTubeEnabled ||
+      homeTopicTabsEnabled);
   setObserverEnabled(shouldEnableObserver);
 };
 
 const setShortsEnabled = (enabled) => {
   shortsEnabled = Boolean(enabled);
-  if (shortsEnabled) {
+  if (shortsEnabled && !errorStateActive) {
     hideShorts(document);
   } else {
     revealShorts(document);
@@ -346,7 +440,7 @@ const setShortsEnabled = (enabled) => {
 
 const setMoreFromYouTubeEnabled = (enabled) => {
   moreFromYouTubeEnabled = Boolean(enabled);
-  if (moreFromYouTubeEnabled) {
+  if (moreFromYouTubeEnabled && !errorStateActive) {
     hideMoreFromYouTube(document);
   } else {
     revealMoreFromYouTube(document);
@@ -356,7 +450,7 @@ const setMoreFromYouTubeEnabled = (enabled) => {
 
 const setHomeTopicTabsEnabled = (enabled) => {
   homeTopicTabsEnabled = Boolean(enabled);
-  if (homeTopicTabsEnabled) {
+  if (homeTopicTabsEnabled && !errorStateActive) {
     hideHomeTopicTabs(document);
   } else {
     revealHomeTopicTabs(document);
@@ -366,7 +460,7 @@ const setHomeTopicTabsEnabled = (enabled) => {
 
 const setExploreEnabled = (enabled) => {
   exploreEnabled = Boolean(enabled);
-  if (exploreEnabled) {
+  if (exploreEnabled && !errorStateActive) {
     hideExplore(document);
   } else {
     revealExplore(document);
@@ -444,6 +538,7 @@ const handleStorageChanges = (changes, areaName) => {
 
 window.BetterYouTubeSetObserverEnabled = setObserverEnabled;
 
+updateErrorState();
 loadEnabledState();
 if (chrome?.storage?.onChanged) {
   chrome.storage.onChanged.addListener(handleStorageChanges);
