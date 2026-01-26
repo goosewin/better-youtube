@@ -60,7 +60,7 @@ The popup surfaces a brief, actionable recovery message and allows the user to d
   * Popup includes a short, clear recovery hint.
   * Guidance does not add permissions or require new APIs.
 - **Dependencies** PRD-1
-- [ ] PRD-2 Add popup guidance for load error recovery
+- [x] PRD-2 Add popup guidance for load error recovery
 
 ### Task PRD-3
 
