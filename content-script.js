@@ -301,6 +301,12 @@ let moreFromYouTubeEnabled = false;
 let homeTopicTabsEnabled = false;
 let errorStateActive = false;
 let errorStatePollTimer = null;
+let playbackSpeedObserver = null;
+let playbackSpeedObserverScheduled = false;
+let playbackSpeedDomReadyListenerAttached = false;
+let lastPlaybackSpeedPlayer = null;
+let lastPlaybackSpeedVideo = null;
+let lastPlaybackSpeedVideoSrc = null;
 
 const stopErrorStatePolling = () => {
   if (!errorStatePollTimer) {
@@ -404,6 +410,109 @@ const setObserverEnabled = (enabled) => {
     return;
   }
   stopObserver();
+};
+
+const playbackSpeedSelectors = {
+  player: ["#movie_player", "ytd-player", "ytd-watch-flexy"],
+  video: ["video.html5-main-video", "#movie_player video", "ytd-player video"],
+};
+
+const findPlaybackSpeedPlayer = () => {
+  const selector = playbackSpeedSelectors.player.join(",");
+  return document.querySelector(selector);
+};
+
+const findPlaybackSpeedVideo = (player) => {
+  const selector = playbackSpeedSelectors.video.join(",");
+  if (player) {
+    const videoInPlayer = player.querySelector(selector);
+    if (videoInPlayer) {
+      return videoInPlayer;
+    }
+  }
+  return document.querySelector(selector);
+};
+
+const initializePlaybackSpeedControls = (player, video) => {
+  if (!player || !video) {
+    return;
+  }
+};
+
+const syncPlaybackSpeedTargets = () => {
+  const player = findPlaybackSpeedPlayer();
+  const video = findPlaybackSpeedVideo(player);
+  if (!player || !video) {
+    return;
+  }
+  const videoSrc = video.currentSrc || video.src || null;
+  const playerChanged = player !== lastPlaybackSpeedPlayer;
+  const videoChanged =
+    video !== lastPlaybackSpeedVideo ||
+    (videoSrc && videoSrc !== lastPlaybackSpeedVideoSrc);
+  if (!playerChanged && !videoChanged) {
+    return;
+  }
+  lastPlaybackSpeedPlayer = player;
+  lastPlaybackSpeedVideo = video;
+  lastPlaybackSpeedVideoSrc = videoSrc;
+  initializePlaybackSpeedControls(player, video);
+};
+
+const schedulePlaybackSpeedSync = () => {
+  if (playbackSpeedObserverScheduled) {
+    return;
+  }
+  playbackSpeedObserverScheduled = true;
+  window.requestAnimationFrame(() => {
+    playbackSpeedObserverScheduled = false;
+    syncPlaybackSpeedTargets();
+  });
+};
+
+const handlePlaybackSpeedMutations = (mutations) => {
+  if (!mutations || mutations.length === 0) {
+    return;
+  }
+  schedulePlaybackSpeedSync();
+};
+
+const startPlaybackSpeedObserver = () => {
+  if (playbackSpeedObserver || !document.body) {
+    return;
+  }
+  playbackSpeedObserver = new MutationObserver(handlePlaybackSpeedMutations);
+  playbackSpeedObserver.observe(document.body, {
+    childList: true,
+    subtree: true,
+  });
+};
+
+const stopPlaybackSpeedObserver = () => {
+  if (!playbackSpeedObserver) {
+    return;
+  }
+  playbackSpeedObserver.disconnect();
+  playbackSpeedObserver = null;
+};
+
+const startPlaybackSpeedLifecycle = () => {
+  stopPlaybackSpeedObserver();
+  if (document.body) {
+    startPlaybackSpeedObserver();
+  } else if (!playbackSpeedDomReadyListenerAttached) {
+    playbackSpeedDomReadyListenerAttached = true;
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        playbackSpeedDomReadyListenerAttached = false;
+        startPlaybackSpeedObserver();
+        schedulePlaybackSpeedSync();
+      },
+      { once: true }
+    );
+  }
+  schedulePlaybackSpeedSync();
 };
 
 const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
@@ -538,6 +647,10 @@ window.BetterYouTubeSetObserverEnabled = setObserverEnabled;
 
 updateErrorState();
 loadEnabledState();
+startPlaybackSpeedLifecycle();
+window.addEventListener("yt-navigate-finish", schedulePlaybackSpeedSync);
+window.addEventListener("yt-page-data-updated", schedulePlaybackSpeedSync);
+window.addEventListener("yt-player-updated", schedulePlaybackSpeedSync);
 if (chrome?.storage?.onChanged) {
   chrome.storage.onChanged.addListener(handleStorageChanges);
 }

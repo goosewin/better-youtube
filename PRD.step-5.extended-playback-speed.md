@@ -48,7 +48,7 @@ Persist the user's last selected speed in extension storage and restore it on ne
   * Detect the YouTube player and primary `video` element reliably.
   * Re-inject or reconcile UI on SPA navigation or player refresh.
 - **Dependencies** None
-- [ ] EXT-1 Add player detection and injection lifecycle
+- [x] EXT-1 Add player detection and injection lifecycle
 
 ### Task EXT-2
 
