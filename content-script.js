@@ -40,6 +40,7 @@ const shortsSelectors = {
 };
 
 window.BetterYouTubeSelectors = shortsSelectors;
+window.BetterYouTubeExtensionId = chrome?.runtime?.id ?? null;
 
 const hideShorts = (root = document) => {
   const selectors = Object.values(shortsSelectors).flatMap((group) =>

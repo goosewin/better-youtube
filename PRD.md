@@ -210,7 +210,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * State persists after closing and reopening popup.
   * State persists after browser restart.
 - **Dependencies** EXT-7, EXT-9
-- [ ] EXT-11 Integration test: verify popup toggle functionality
+- [x] EXT-11 Integration test: verify popup toggle functionality
 
 ---
 
