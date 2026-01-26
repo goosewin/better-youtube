@@ -61,3 +61,72 @@ const hideShorts = (root = document) => {
 };
 
 window.BetterYouTubeHideShorts = hideShorts;
+
+let observer = null;
+let observerScheduled = false;
+let observerEnabled = true;
+
+const scheduleHideShorts = () => {
+  if (!observerEnabled || observerScheduled) {
+    return;
+  }
+  observerScheduled = true;
+  window.requestAnimationFrame(() => {
+    observerScheduled = false;
+    hideShorts(document);
+  });
+};
+
+const handleMutations = (mutations) => {
+  if (!observerEnabled || !mutations || mutations.length === 0) {
+    return;
+  }
+  scheduleHideShorts();
+};
+
+const startObserver = () => {
+  if (observer || !document.body) {
+    return;
+  }
+  observer = new MutationObserver(handleMutations);
+  observer.observe(document.body, { childList: true, subtree: true });
+};
+
+const stopObserver = () => {
+  if (!observer) {
+    return;
+  }
+  observer.disconnect();
+  observer = null;
+};
+
+const setObserverEnabled = (enabled) => {
+  observerEnabled = Boolean(enabled);
+  if (observerEnabled) {
+    stopObserver();
+    startObserver();
+    hideShorts(document);
+    return;
+  }
+  stopObserver();
+};
+
+const initObserver = () => {
+  if (document.body) {
+    startObserver();
+    hideShorts(document);
+    return;
+  }
+  document.addEventListener(
+    "DOMContentLoaded",
+    () => {
+      startObserver();
+      hideShorts(document);
+    },
+    { once: true }
+  );
+};
+
+window.BetterYouTubeSetObserverEnabled = setObserverEnabled;
+
+initObserver();
