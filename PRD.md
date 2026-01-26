@@ -135,7 +135,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Storage read is asynchronous and non-blocking.
   * Content script listens for storage changes and reacts in real-time.
 - **Dependencies** EXT-3
-- [ ] EXT-5 Integrate chrome.storage for persisting toggle state
+- [x] EXT-5 Integrate chrome.storage for persisting toggle state
 
 ### Task EXT-6
 

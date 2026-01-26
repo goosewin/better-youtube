@@ -60,11 +60,24 @@ const hideShorts = (root = document) => {
   });
 };
 
+const revealShorts = (root = document) => {
+  root
+    .querySelectorAll('[data-better-youtube-hidden="true"]')
+    .forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.style.removeProperty("display");
+      element.removeAttribute("data-better-youtube-hidden");
+    });
+};
+
 window.BetterYouTubeHideShorts = hideShorts;
 
 let observer = null;
 let observerScheduled = false;
-let observerEnabled = true;
+let observerEnabled = false;
+let domReadyListenerAttached = false;
 
 const scheduleHideShorts = () => {
   if (!observerEnabled || observerScheduled) {
@@ -104,29 +117,57 @@ const setObserverEnabled = (enabled) => {
   observerEnabled = Boolean(enabled);
   if (observerEnabled) {
     stopObserver();
-    startObserver();
+    if (document.body) {
+      startObserver();
+    } else if (!domReadyListenerAttached) {
+      domReadyListenerAttached = true;
+      document.addEventListener(
+        "DOMContentLoaded",
+        () => {
+          domReadyListenerAttached = false;
+          if (observerEnabled) {
+            startObserver();
+            hideShorts(document);
+          }
+        },
+        { once: true }
+      );
+    }
     hideShorts(document);
     return;
   }
   stopObserver();
+  revealShorts(document);
 };
 
-const initObserver = () => {
-  if (document.body) {
-    startObserver();
-    hideShorts(document);
+const STORAGE_KEY = "betterYouTubeEnabled";
+
+const normalizeEnabledValue = (value) =>
+  value === undefined ? true : Boolean(value);
+
+const loadEnabledState = () => {
+  if (!chrome?.storage?.sync) {
+    setObserverEnabled(true);
     return;
   }
-  document.addEventListener(
-    "DOMContentLoaded",
-    () => {
-      startObserver();
-      hideShorts(document);
-    },
-    { once: true }
-  );
+
+  chrome.storage.sync.get({ [STORAGE_KEY]: true }, (result) => {
+    const enabled = normalizeEnabledValue(result[STORAGE_KEY]);
+    setObserverEnabled(enabled);
+  });
+};
+
+const handleStorageChanges = (changes, areaName) => {
+  if (areaName !== "sync" || !changes[STORAGE_KEY]) {
+    return;
+  }
+  const nextValue = normalizeEnabledValue(changes[STORAGE_KEY].newValue);
+  setObserverEnabled(nextValue);
 };
 
 window.BetterYouTubeSetObserverEnabled = setObserverEnabled;
 
-initObserver();
+loadEnabledState();
+if (chrome?.storage?.onChanged) {
+  chrome.storage.onChanged.addListener(handleStorageChanges);
+}
