@@ -71,7 +71,7 @@ The popup surfaces a brief, actionable recovery message and allows the user to d
   * Toggle state sync remains consistent with storage key.
   * Disabling stops observer and reveals hidden elements.
 - **Dependencies** None
-- [ ] PRD-3 Validate toggle behavior during error recovery
+- [x] PRD-3 Validate toggle behavior during error recovery
 
 ---
 

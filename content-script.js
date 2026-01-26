@@ -419,21 +419,19 @@ const normalizeEnabledValueWithDefault = (value, defaultValue) =>
   value === undefined ? Boolean(defaultValue) : Boolean(value);
 
 const updateObserverState = () => {
-  const shouldEnableObserver =
-    !errorStateActive &&
-    (shortsEnabled ||
-      exploreEnabled ||
-      moreFromYouTubeEnabled ||
-      homeTopicTabsEnabled);
+  const shouldEnableObserver = !errorStateActive && shortsEnabled;
   setObserverEnabled(shouldEnableObserver);
 };
 
 const setShortsEnabled = (enabled) => {
   shortsEnabled = Boolean(enabled);
-  if (shortsEnabled && !errorStateActive) {
-    hideShorts(document);
-  } else {
-    revealShorts(document);
+  if (!shortsEnabled) {
+    revealAllHiddenContent(document);
+    updateObserverState();
+    return;
+  }
+  if (!errorStateActive) {
+    hideEnabledContent(document);
   }
   updateObserverState();
 };
