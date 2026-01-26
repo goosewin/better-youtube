@@ -272,6 +272,7 @@ const setObserverEnabled = (enabled) => {
 };
 
 const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
+const EXPLORE_STORAGE_KEY = "betterYouTubeHideExploreEnabled";
 const MORE_FROM_YOUTUBE_STORAGE_KEY =
   "betterYouTubeHideMoreFromYouTubeEnabled";
 
@@ -324,16 +325,21 @@ const loadEnabledState = () => {
   chrome.storage.sync.get(
     {
       [SHORTS_STORAGE_KEY]: true,
+      [EXPLORE_STORAGE_KEY]: true,
       [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
     },
     (result) => {
       const shortsEnabledValue = normalizeEnabledValue(
         result[SHORTS_STORAGE_KEY]
       );
+      const exploreEnabledValue = normalizeEnabledValue(
+        result[EXPLORE_STORAGE_KEY]
+      );
       const moreFromEnabledValue = normalizeEnabledValue(
         result[MORE_FROM_YOUTUBE_STORAGE_KEY]
       );
       setShortsEnabled(shortsEnabledValue);
+      setExploreEnabled(exploreEnabledValue);
       setMoreFromYouTubeEnabled(moreFromEnabledValue);
     }
   );
@@ -348,6 +354,12 @@ const handleStorageChanges = (changes, areaName) => {
       changes[SHORTS_STORAGE_KEY].newValue
     );
     setShortsEnabled(nextShortsValue);
+  }
+  if (changes[EXPLORE_STORAGE_KEY]) {
+    const nextExploreValue = normalizeEnabledValue(
+      changes[EXPLORE_STORAGE_KEY].newValue
+    );
+    setExploreEnabled(nextExploreValue);
   }
   if (changes[MORE_FROM_YOUTUBE_STORAGE_KEY]) {
     const nextMoreFromValue = normalizeEnabledValue(

@@ -70,7 +70,7 @@ When the Explore toggle changes, apply or remove the UI hiding behavior without 
   * Content script listens to storage changes for the Explore key.
   * Popup uses the same storage key name and default value policy.
 - **Dependencies** EX-2
-- [ ] EX-3 Align storage key and live update handling for Explore
+- [x] EX-3 Align storage key and live update handling for Explore
 
 ---
 
