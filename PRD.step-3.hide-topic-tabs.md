@@ -70,7 +70,7 @@ When the toggle changes, the content script must hide or reveal the topic tabs r
   * Toggle initializes to the stored value with a sensible default.
   * Storage change events update the toggle without reload.
 - **Dependencies** BT-2
-- [ ] BT-3 Wire popup toggle to storage key
+- [x] BT-3 Wire popup toggle to storage key
 
 ---
 

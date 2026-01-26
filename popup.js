@@ -4,6 +4,7 @@ const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
 const EXPLORE_STORAGE_KEY = "betterYouTubeHideExploreEnabled";
 const MORE_FROM_YOUTUBE_STORAGE_KEY =
   "betterYouTubeHideMoreFromYouTubeEnabled";
+const HOME_TOPIC_TABS_STORAGE_KEY = "betterYouTubeHideHomeTopicTabsEnabled";
 
 const normalizeEnabledValue = (value) =>
   value === undefined ? true : Boolean(value);
@@ -12,6 +13,7 @@ const getShortsToggle = () => document.getElementById("shorts-toggle");
 const getExploreToggle = () => document.getElementById("explore-toggle");
 const getMoreFromToggle = () =>
   document.getElementById("more-from-youtube-toggle");
+const getHomeTabsToggle = () => document.getElementById("home-tabs-toggle");
 
 const setToggleState = (toggle, enabled) => {
   if (!toggle) {
@@ -24,10 +26,12 @@ const loadToggleState = () => {
   const shortsToggle = getShortsToggle();
   const exploreToggle = getExploreToggle();
   const moreFromToggle = getMoreFromToggle();
+  const homeTabsToggle = getHomeTabsToggle();
   if (!chrome?.storage?.sync) {
     setToggleState(shortsToggle, true);
     setToggleState(exploreToggle, true);
     setToggleState(moreFromToggle, true);
+    setToggleState(homeTabsToggle, false);
     return;
   }
 
@@ -36,6 +40,7 @@ const loadToggleState = () => {
       [SHORTS_STORAGE_KEY]: true,
       [EXPLORE_STORAGE_KEY]: true,
       [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
+      [HOME_TOPIC_TABS_STORAGE_KEY]: false,
     },
     (result) => {
       setToggleState(
@@ -49,6 +54,10 @@ const loadToggleState = () => {
       setToggleState(
         moreFromToggle,
         normalizeEnabledValue(result[MORE_FROM_YOUTUBE_STORAGE_KEY])
+      );
+      setToggleState(
+        homeTabsToggle,
+        normalizeEnabledValue(result[HOME_TOPIC_TABS_STORAGE_KEY])
       );
     }
   );
@@ -78,6 +87,14 @@ const handleMoreFromToggleChange = (event) => {
   chrome.storage.sync.set({ [MORE_FROM_YOUTUBE_STORAGE_KEY]: nextValue });
 };
 
+const handleHomeTabsToggleChange = (event) => {
+  if (!chrome?.storage?.sync) {
+    return;
+  }
+  const nextValue = Boolean(event.target.checked);
+  chrome.storage.sync.set({ [HOME_TOPIC_TABS_STORAGE_KEY]: nextValue });
+};
+
 const handleStorageChanges = (changes, areaName) => {
   if (areaName !== "sync") {
     return;
@@ -103,6 +120,13 @@ const handleStorageChanges = (changes, areaName) => {
       normalizeEnabledValue(changes[MORE_FROM_YOUTUBE_STORAGE_KEY].newValue)
     );
   }
+  if (changes[HOME_TOPIC_TABS_STORAGE_KEY]) {
+    const homeTabsToggle = getHomeTabsToggle();
+    setToggleState(
+      homeTabsToggle,
+      normalizeEnabledValue(changes[HOME_TOPIC_TABS_STORAGE_KEY].newValue)
+    );
+  }
 };
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -117,6 +141,10 @@ document.addEventListener("DOMContentLoaded", () => {
   const moreFromToggle = getMoreFromToggle();
   if (moreFromToggle) {
     moreFromToggle.addEventListener("change", handleMoreFromToggleChange);
+  }
+  const homeTabsToggle = getHomeTabsToggle();
+  if (homeTabsToggle) {
+    homeTabsToggle.addEventListener("change", handleHomeTabsToggleChange);
   }
   loadToggleState();
 });
