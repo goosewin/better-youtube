@@ -59,7 +59,7 @@ When the toggle changes, the content script must hide or reveal the topic tabs r
   * Toggle is visible and aligned with existing UI.
   * Label text clearly indicates it controls Home topic tabs.
 - **Dependencies** None
-- [ ] BT-2 Add popup toggle for Home tabs
+- [x] BT-2 Add popup toggle for Home tabs
 
 ### Task BT-3
 
