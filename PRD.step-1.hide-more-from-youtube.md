@@ -59,7 +59,7 @@ A new toggle appears in the popup UI to control the feature, persists via `chrom
   * Toggle has a unique input id for script access.
   * Label text reflects "More from YouTube" behavior.
 - **Dependencies** BYT-1
-- [ ] BYT-2 Add popup toggle for "More from YouTube"
+- [x] BYT-2 Add popup toggle for "More from YouTube"
 
 ### Task BYT-3
 
