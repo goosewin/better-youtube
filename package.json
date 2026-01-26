@@ -1,0 +1,11 @@
+{
+  "name": "better-youtube",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:ext-9": "node tests/ext-9.integration.test.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.42.1"
+  }
+}

@@ -185,7 +185,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Shorts shelf is hidden on youtube.com homepage.
   * Navigation Shorts link is hidden.
 - **Dependencies** EXT-1, EXT-2, EXT-3, EXT-4, EXT-5
-- [ ] EXT-9 Integration test: load extension and verify homepage Shorts hiding
+- [x] EXT-9 Integration test: load extension and verify homepage Shorts hiding
 
 ### Task EXT-10
 
