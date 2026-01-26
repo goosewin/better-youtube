@@ -97,7 +97,7 @@ YouTube uses dynamic content loading (infinite scroll, SPA navigation). The exte
   * Selectors target Shorts in the subscriptions feed.
   * Selectors are organized in a documented object or module.
 - **Dependencies** EXT-1
-- [ ] EXT-2 Define CSS selectors for all Shorts-related DOM elements
+- [x] EXT-2 Define CSS selectors for all Shorts-related DOM elements
 
 ### Task EXT-3
 
