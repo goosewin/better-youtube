@@ -81,7 +81,7 @@ Persist the user's last selected speed in extension storage and restore it on ne
   * Update copy to mention extended speed controls.
   * Keep existing toggle logic intact.
 - **Dependencies** None
-- [ ] EXT-4 Update popup messaging for new feature
+- [x] EXT-4 Update popup messaging for new feature
 
 ---
 
