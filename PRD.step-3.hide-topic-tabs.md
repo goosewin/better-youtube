@@ -48,7 +48,7 @@ When the toggle changes, the content script must hide or reveal the topic tabs r
   * Home topic tabs row is hidden only when the new setting is enabled.
   * Changes apply on initial load and after dynamic content updates.
 - **Dependencies** None
-- [ ] BT-1 Add Home tabs hide logic in content script
+- [x] BT-1 Add Home tabs hide logic in content script
 
 ### Task BT-2
 

@@ -65,10 +65,20 @@ const moreFromYouTubeSelectors = {
   titles: ["h2#title", "span#title", "#title"],
 };
 
+const homeTopicTabsSelectors = {
+  homepage: {
+    row: [
+      "ytd-feed-filter-chip-bar-renderer",
+      "ytd-feed-filter-chip-bar-renderer ytd-chip-cloud-renderer",
+    ],
+  },
+};
+
 window.BetterYouTubeSelectors = {
   shorts: shortsSelectors,
   explore: exploreSelectors,
   moreFromYouTube: moreFromYouTubeSelectors,
+  homeTopicTabs: homeTopicTabsSelectors,
 };
 window.BetterYouTubeExtensionId = chrome?.runtime?.id ?? null;
 
@@ -190,6 +200,37 @@ const revealMoreFromYouTube = (root = document) => {
     });
 };
 
+const hideHomeTopicTabs = (root = document) => {
+  const selectors = Object.values(homeTopicTabsSelectors).flatMap((group) =>
+    Object.values(group).flat()
+  );
+
+  selectors.forEach((selector) => {
+    try {
+      root.querySelectorAll(selector).forEach((element) => {
+        if (element && element.style.display !== "none") {
+          element.style.display = "none";
+          element.setAttribute("data-better-youtube-home-tabs-hidden", "true");
+        }
+      });
+    } catch (error) {
+      return;
+    }
+  });
+};
+
+const revealHomeTopicTabs = (root = document) => {
+  root
+    .querySelectorAll('[data-better-youtube-home-tabs-hidden="true"]')
+    .forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.style.removeProperty("display");
+      element.removeAttribute("data-better-youtube-home-tabs-hidden");
+    });
+};
+
 const hideEnabledContent = (root = document) => {
   if (shortsEnabled) {
     hideShorts(root);
@@ -199,6 +240,9 @@ const hideEnabledContent = (root = document) => {
   }
   if (moreFromYouTubeEnabled) {
     hideMoreFromYouTube(root);
+  }
+  if (homeTopicTabsEnabled) {
+    hideHomeTopicTabs(root);
   }
 };
 
@@ -211,6 +255,7 @@ let domReadyListenerAttached = false;
 let shortsEnabled = false;
 let exploreEnabled = false;
 let moreFromYouTubeEnabled = false;
+let homeTopicTabsEnabled = false;
 
 const scheduleHideContent = () => {
   if (!observerEnabled || observerScheduled) {
@@ -275,13 +320,17 @@ const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
 const EXPLORE_STORAGE_KEY = "betterYouTubeHideExploreEnabled";
 const MORE_FROM_YOUTUBE_STORAGE_KEY =
   "betterYouTubeHideMoreFromYouTubeEnabled";
+const HOME_TOPIC_TABS_STORAGE_KEY = "betterYouTubeHideHomeTopicTabsEnabled";
 
 const normalizeEnabledValue = (value) =>
   value === undefined ? true : Boolean(value);
 
+const normalizeEnabledValueWithDefault = (value, defaultValue) =>
+  value === undefined ? Boolean(defaultValue) : Boolean(value);
+
 const updateObserverState = () => {
   const shouldEnableObserver =
-    shortsEnabled || exploreEnabled || moreFromYouTubeEnabled;
+    shortsEnabled || exploreEnabled || moreFromYouTubeEnabled || homeTopicTabsEnabled;
   setObserverEnabled(shouldEnableObserver);
 };
 
@@ -305,6 +354,16 @@ const setMoreFromYouTubeEnabled = (enabled) => {
   updateObserverState();
 };
 
+const setHomeTopicTabsEnabled = (enabled) => {
+  homeTopicTabsEnabled = Boolean(enabled);
+  if (homeTopicTabsEnabled) {
+    hideHomeTopicTabs(document);
+  } else {
+    revealHomeTopicTabs(document);
+  }
+  updateObserverState();
+};
+
 const setExploreEnabled = (enabled) => {
   exploreEnabled = Boolean(enabled);
   if (exploreEnabled) {
@@ -319,6 +378,7 @@ const loadEnabledState = () => {
   if (!chrome?.storage?.sync) {
     setShortsEnabled(true);
     setMoreFromYouTubeEnabled(true);
+    setHomeTopicTabsEnabled(false);
     return;
   }
 
@@ -327,6 +387,7 @@ const loadEnabledState = () => {
       [SHORTS_STORAGE_KEY]: true,
       [EXPLORE_STORAGE_KEY]: true,
       [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
+      [HOME_TOPIC_TABS_STORAGE_KEY]: false,
     },
     (result) => {
       const shortsEnabledValue = normalizeEnabledValue(
@@ -338,9 +399,14 @@ const loadEnabledState = () => {
       const moreFromEnabledValue = normalizeEnabledValue(
         result[MORE_FROM_YOUTUBE_STORAGE_KEY]
       );
+      const homeTopicTabsEnabledValue = normalizeEnabledValueWithDefault(
+        result[HOME_TOPIC_TABS_STORAGE_KEY],
+        false
+      );
       setShortsEnabled(shortsEnabledValue);
       setExploreEnabled(exploreEnabledValue);
       setMoreFromYouTubeEnabled(moreFromEnabledValue);
+      setHomeTopicTabsEnabled(homeTopicTabsEnabledValue);
     }
   );
 };
@@ -366,6 +432,13 @@ const handleStorageChanges = (changes, areaName) => {
       changes[MORE_FROM_YOUTUBE_STORAGE_KEY].newValue
     );
     setMoreFromYouTubeEnabled(nextMoreFromValue);
+  }
+  if (changes[HOME_TOPIC_TABS_STORAGE_KEY]) {
+    const nextHomeTabsValue = normalizeEnabledValueWithDefault(
+      changes[HOME_TOPIC_TABS_STORAGE_KEY].newValue,
+      false
+    );
+    setHomeTopicTabsEnabled(nextHomeTabsValue);
   }
 };
 
