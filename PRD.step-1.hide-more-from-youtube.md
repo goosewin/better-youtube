@@ -70,7 +70,7 @@ A new toggle appears in the popup UI to control the feature, persists via `chrom
   * New storage key is read with a default and updates the UI.
   * Change handler persists the toggle state to storage.
 - **Dependencies** BYT-2
-- [ ] BYT-3 Wire popup toggle to storage
+- [x] BYT-3 Wire popup toggle to storage
 
 ---
 
