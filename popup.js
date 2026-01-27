@@ -1,3 +1,15 @@
+/**
+ * Better YouTube - Popup Script
+ *
+ * Author: Dan Goosewin <dan@goosewin.com>
+ * Website: https://goosewin.com
+ * Version: 0.1.2
+ * License: MIT
+ *
+ * This script handles the popup UI and syncs toggle states with
+ * browser storage (chrome.storage or browser.storage).
+ */
+
 "use strict";
 
 const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
