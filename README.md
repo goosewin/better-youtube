@@ -26,6 +26,11 @@ actually useful.
 
 ## Install
 
+Recommended: install from the Chrome Web Store:
+https://chromewebstore.google.com/detail/better-youtube/nllhjoojnmeecenjlehclocedimdalao
+
+Alternatively, load unpacked:
+
 1. Download or clone this repo to your computer.
 2. Open Chrome and go to `chrome://extensions`.
 3. Turn on Developer mode (top right).
