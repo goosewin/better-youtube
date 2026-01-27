@@ -1,0 +1,23 @@
+build.cjs
+  40acbf1b2130350e 102
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.37",
+  "base_commit_sha": "3e004ad993c90a11bbef7ec9ae20531ddf6f0bba",
+  "prompts": {
+    "40acbf1b2130350e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_3ff362561ffevT2e56u2Qra6mM",
+        "model": "opencode/kimi-k2.5"
+      },
+      "human_author": "goosewin <daniel@webline.app>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 2,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
