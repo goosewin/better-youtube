@@ -1,12 +1,45 @@
 {
   "name": "better-youtube",
+  "version": "0.1.2",
+  "description": "Hide YouTube Shorts across the site.",
+  "author": "Dan Goosewin <dan@goosewin.com>",
+  "homepage": "https://goosewin.com",
+  "license": "MIT",
   "private": true,
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/goosewin/better-youtube.git"
+  },
+  "bugs": {
+    "url": "https://github.com/goosewin/better-youtube/issues"
+  },
+  "keywords": [
+    "youtube",
+    "shorts",
+    "browser-extension",
+    "chrome-extension",
+    "firefox-addon",
+    "productivity"
+  ],
   "scripts": {
-    "test:ext-9": "node tests/ext-9.integration.test.mjs",
-    "test:ext-10": "node tests/ext-10.integration.test.mjs"
+    "build": "node build.cjs",
+    "build:chrome": "node build.cjs && cd dist/chrome && zip -r ../better-youtube-chrome.zip *",
+    "build:firefox": "node build.cjs && cd dist/firefox && zip -r ../better-youtube-firefox.zip *",
+    "test": "npm run test:chrome && npm run test:firefox",
+    "test:chrome": "npm run test:ext-9:chrome && npm run test:ext-10:chrome",
+    "test:firefox": "npm run test:ext-9:firefox && npm run test:ext-10:firefox",
+    "test:ext-9:chrome": "node tests/ext-9.integration.test.mjs",
+    "test:ext-9:firefox": "node tests/ext-9.firefox.test.mjs",
+    "test:ext-10:chrome": "node tests/ext-10.integration.test.mjs",
+    "test:ext-10:firefox": "node tests/ext-10.firefox.test.mjs",
+    "test:ext-11:chrome": "node tests/ext-11.integration.test.mjs",
+    "test:ext-11:firefox": "node tests/ext-11.firefox.test.mjs"
   },
   "devDependencies": {
     "playwright": "^1.42.1"
+  },
+  "engines": {
+    "node": ">=16.0.0"
   }
 }
