@@ -99,8 +99,7 @@ const firefoxManifest = {
     gecko: {
       id: EXTENSION_ID,
       data_collection_permissions: {
-        required: [],
-        optional: []
+        required: ["none"]
       }
     }
   }
