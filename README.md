@@ -50,7 +50,7 @@ Install from the [Chrome Web Store](https://chromewebstore.google.com/detail/bet
 
 ### Firefox Add-ons
 
-Install from [Firefox Add-ons](https://addons.mozilla.org/firefox/addon/better-youtube/) (when published):
+Install from [Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/better_youtube/):
 
 1. Click the link above
 2. Click "Add to Firefox"
