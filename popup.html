@@ -8,12 +8,13 @@
     <style>
       :root {
         color-scheme: light;
-        --bg: #f8f5ef;
+        --bg: #f6f6f4;
         --card: #ffffff;
-        --text: #1c1b18;
-        --muted: #6b645b;
-        --accent: #ff6a3d;
-        --shadow: 0 10px 30px rgba(35, 26, 17, 0.12);
+        --text: #1a1a1a;
+        --muted: #6a6a6a;
+        --border: #e4e4e1;
+        --accent: #111111;
+        --toggle-off: #c9c9c5;
       }
 
       * {
@@ -22,81 +23,92 @@
 
       body {
         margin: 0;
-        padding: 16px;
+        padding: 0;
         width: 280px;
         max-width: 300px;
-        font-family: "Georgia", "Times New Roman", serif;
-        background: radial-gradient(circle at top, #fff7e9 0%, var(--bg) 55%);
+        font-family: "Space Grotesk", "IBM Plex Sans", "Helvetica Neue",
+          sans-serif;
+        background: var(--bg);
         color: var(--text);
       }
 
       .card {
         background: var(--card);
-        border-radius: 16px;
-        padding: 16px;
-        box-shadow: var(--shadow);
+        border-radius: 0;
+        padding: 12px;
+        border: none;
+        width: 100%;
+        margin: 0;
       }
 
       .brand {
         display: flex;
         align-items: center;
-        gap: 10px;
-        margin-bottom: 12px;
+        gap: 8px;
+        margin-bottom: 10px;
       }
 
       .logo {
-        width: 36px;
-        height: 36px;
-        border-radius: 12px;
-        background: linear-gradient(135deg, #ffd1a8, #ff6a3d);
+        width: 32px;
+        height: 32px;
+        border-radius: 10px;
+        background: #111111;
+        color: #ffffff;
         display: grid;
         place-items: center;
-        font-size: 18px;
+        font-size: 12px;
+        font-weight: 600;
+        letter-spacing: 0.6px;
       }
 
       .title {
-        font-size: 18px;
+        font-size: 16px;
         margin: 0;
         letter-spacing: 0.2px;
+        font-weight: 600;
       }
 
       .subtitle {
         margin: 4px 0 0;
-        font-size: 12px;
+        font-size: 11px;
         color: var(--muted);
+        line-height: 1.3;
       }
 
-      .guidance {
-        margin: 12px 0 0;
-        font-size: 12px;
+      .note {
+        margin: 8px 0 0;
+        font-size: 11px;
         line-height: 1.4;
         color: var(--muted);
-        background: #fff3e6;
-        border-radius: 10px;
-        padding: 10px 12px;
       }
 
       .toggle-row {
-        margin-top: 16px;
-        display: flex;
+        margin-top: 10px;
+        display: grid;
+        grid-template-columns: 1fr auto;
         align-items: center;
-        justify-content: space-between;
-        gap: 12px;
-        padding: 10px 12px;
-        border-radius: 12px;
-        background: #fff8ef;
+        gap: 10px;
+        padding: 10px;
+        border-radius: 10px;
+        background: #ffffff;
+        border: 1px solid var(--border);
+        width: 100%;
+        box-sizing: border-box;
       }
 
       .toggle-label {
-        font-size: 14px;
-        font-weight: 600;
+        font-size: 13px;
+        font-weight: 500;
+        line-height: 1.2;
+        min-width: 0;
+        overflow-wrap: anywhere;
       }
 
       .switch {
         position: relative;
         display: inline-block;
-        width: 44px;
-        height: 24px;
+        width: 42px;
+        height: 22px;
       }
 
       .switch input {
@@ -112,7 +124,7 @@
         left: 0;
         right: 0;
         bottom: 0;
-        background-color: #d7cfc3;
+        background-color: var(--toggle-off);
         transition: 0.2s ease;
         border-radius: 999px;
       }
@@ -120,14 +132,14 @@
       .slider::before {
         position: absolute;
         content: "";
-        height: 18px;
-        width: 18px;
+        height: 16px;
+        width: 16px;
         left: 3px;
         bottom: 3px;
         background-color: white;
         transition: 0.2s ease;
         border-radius: 50%;
-        box-shadow: 0 2px 6px rgba(0, 0, 0, 0.2);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
       }
 
       input:checked + .slider {
@@ -149,10 +161,9 @@
         </div>
       </div>
 
-      <p class="guidance">
-        Extended playback speeds (0.1x to 5x) are available in the player. If
-        YouTube shows a load error, turn off the Shorts filter, reload the page,
-        then turn it back on.
+      <p class="note">
+        If you use an adblocker, videos might fail to load with "This content
+        isn't available, try again later." Reload the page or disable adblock.
       </p>
 
       <div class="toggle-row">
@@ -180,9 +191,33 @@
       </div>
 
       <div class="toggle-row">
+        <span class="toggle-label">Hide Breaking News</span>
+        <label class="switch" aria-label="Toggle Breaking News sections">
+          <input id="breaking-news-toggle" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Hide Movies</span>
+        <label class="switch" aria-label="Toggle Movies sections">
+          <input id="movies-toggle" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
         <span class="toggle-label">Hide Home topic tabs</span>
         <label class="switch" aria-label="Toggle Home topic tabs">
           <input id="home-tabs-toggle" type="checkbox" />
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="toggle-row">
+        <span class="toggle-label">Playback speed controls</span>
+        <label class="switch" aria-label="Toggle playback speed controls">
+          <input id="playback-speed-toggle" type="checkbox" />
           <span class="slider"></span>
         </label>
       </div>

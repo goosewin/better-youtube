@@ -39,40 +39,78 @@ const shortsSelectors = {
   },
 };
 
+const sidebarSectionSelectors = [
+  "ytd-guide-section-renderer",
+  "ytd-guide-collapsible-section-entry-renderer",
+];
+
+const sidebarTitleSelectors = [
+  "#guide-section-title",
+  "h3#guide-section-title",
+  "yt-formatted-string#title",
+  "h3#title",
+  "span#title",
+];
+
+const feedSectionSelectors = [
+  "ytd-rich-section-renderer",
+  "ytd-item-section-renderer",
+  "ytd-shelf-renderer",
+  "ytd-rich-shelf-renderer",
+];
+
+const feedTitleSelectors = [
+  "h2#title",
+  "yt-formatted-string#title",
+  "span#title",
+];
+
 const exploreSelectors = {
-  navigation: {
-    sections: [
-      "ytd-guide-section-renderer",
-      "ytd-guide-collapsible-section-entry-renderer",
-    ],
-    titles: [
-      "#guide-section-title",
-      "h3#guide-section-title",
-      "yt-formatted-string#title",
-      "h3#title",
-      "span#title",
-    ],
-  },
+  sections: sidebarSectionSelectors,
+  titles: sidebarTitleSelectors,
 };
 
 const moreFromYouTubeSelectors = {
-  sections: [
-    "ytd-rich-section-renderer",
-    "ytd-item-section-renderer",
-    "ytd-shelf-renderer",
-    "ytd-rich-shelf-renderer",
-  ],
-  titles: ["h2#title", "span#title", "#title"],
+  sections: [...feedSectionSelectors, ...sidebarSectionSelectors],
+  titles: [...feedTitleSelectors, ...sidebarTitleSelectors],
+};
+
+const breakingNewsSelectors = {
+  sections: feedSectionSelectors,
+  titles: feedTitleSelectors,
+};
+
+const moviesSelectors = {
+  sections: [...feedSectionSelectors, ...sidebarSectionSelectors],
+  titles: [...feedTitleSelectors, ...sidebarTitleSelectors],
 };
 
 const homeTopicTabsSelectors = {
   homepage: {
     row: [
-      "ytd-feed-filter-chip-bar-renderer",
-      "ytd-feed-filter-chip-bar-renderer ytd-chip-cloud-renderer",
+      "ytd-browse[page-subtype=\"home\"] ytd-feed-filter-chip-bar-renderer",
+      "ytd-browse[page-subtype=\"home\"] ytd-feed-filter-chip-bar-renderer ytd-chip-cloud-renderer",
+      "ytd-browse[page-subtype=\"home\"] #chips",
+      "ytd-browse[page-subtype=\"home\"] #chips-wrapper",
+      "ytd-browse[page-subtype=\"home\"] #chips-content",
+      "ytd-browse[page-subtype=\"home\"] #chips-header",
+      "ytd-browse[page-subtype=\"home\"] #chip-bar",
+      "ytd-browse[page-subtype=\"home\"] #chips-bar",
     ],
   },
 };
+
+const HOME_TABS_PARENT_IDS = new Set([
+  "chips",
+  "chips-wrapper",
+  "chips-content",
+  "chips-header",
+  "chip-bar",
+  "chips-bar",
+]);
+
+const CHIPBAR_CLASS = "with-chipbar";
+const CHIPBAR_CLASS_ATTRIBUTE = "data-better-youtube-chipbar-class";
 
 const errorStateSelectors = [
   "ytd-error-screen",
@@ -125,7 +163,11 @@ const hideShorts = (root = document) => {
   selectors.forEach((selector) => {
     try {
       root.querySelectorAll(selector).forEach((element) => {
-        if (element && element.style.display !== "none") {
+        if (
+          element &&
+          element.style.display !== "none" &&
+          !shouldSkipElement(element)
+        ) {
           element.style.display = "none";
           element.setAttribute("data-better-youtube-hidden", "true");
         }
@@ -151,6 +193,39 @@ const revealShorts = (root = document) => {
 const normalizeTitleText = (value) =>
   value ? value.replace(/\s+/g, " ").trim().toLowerCase() : "";
 
+const findSectionsByTitle = (
+  root,
+  titles,
+  sectionSelectors,
+  titleSelectors
+) => {
+  const normalizedTargets = new Set(
+    (Array.isArray(titles) ? titles : [titles])
+      .map((title) => normalizeTitleText(title))
+      .filter(Boolean)
+  );
+  if (normalizedTargets.size === 0) {
+    return [];
+  }
+  const sectionSelector = sectionSelectors.join(",");
+  const titleSelector = titleSelectors.join(",");
+  if (!sectionSelector || !titleSelector) {
+    return [];
+  }
+  const sections = new Set();
+  root.querySelectorAll(sectionSelector).forEach((section) => {
+    const titleNodes = section.querySelectorAll(titleSelector);
+    for (const titleNode of titleNodes) {
+      const normalized = normalizeTitleText(titleNode?.textContent ?? "");
+      if (normalizedTargets.has(normalized)) {
+        sections.add(section);
+        break;
+      }
+    }
+  });
+  return Array.from(sections);
+};
+
 const isElementVisible = (element) => {
   if (!element) {
     return false;
@@ -167,30 +242,35 @@ const isElementVisible = (element) => {
   return rect.width > 0 && rect.height > 0;
 };
 
+const shouldSkipElement = (element) => {
+  if (!element) {
+    return true;
+  }
+  const active = document.activeElement;
+  if (!active) {
+    return false;
+  }
+  return element === active || element.contains(active);
+};
+
+
 const EXPLORE_SECTION_TITLE = "explore";
 
-const findExploreSections = (root = document) => {
-  const titleSelector = exploreSelectors.navigation.titles.join(",");
-  const sectionSelector = exploreSelectors.navigation.sections.join(",");
-  const sections = new Set();
-
-  root.querySelectorAll(titleSelector).forEach((title) => {
-    const normalized = normalizeTitleText(title?.textContent ?? "");
-    if (normalized !== EXPLORE_SECTION_TITLE) {
-      return;
-    }
-    const section = title.closest(sectionSelector);
-    if (section) {
-      sections.add(section);
-    }
-  });
-
-  return Array.from(sections);
-};
+const findExploreSections = (root = document) =>
+  findSectionsByTitle(
+    root,
+    EXPLORE_SECTION_TITLE,
+    exploreSelectors.sections,
+    exploreSelectors.titles
+  );
 
 const hideExplore = (root = document) => {
   findExploreSections(root).forEach((section) => {
-    if (section && section.style.display !== "none") {
+    if (
+      section &&
+      section.style.display !== "none" &&
+      !shouldSkipElement(section)
+    ) {
       section.style.display = "none";
       section.setAttribute("data-better-youtube-explore-hidden", "true");
     }
@@ -211,28 +291,21 @@ const revealExplore = (root = document) => {
 
 const MORE_FROM_YOUTUBE_TITLE = "more from youtube";
 
-const findMoreFromYouTubeSections = (root = document) => {
-  const titleSelector = moreFromYouTubeSelectors.titles.join(",");
-  const sectionSelector = moreFromYouTubeSelectors.sections.join(",");
-  const sections = new Set();
-
-  root.querySelectorAll(titleSelector).forEach((title) => {
-    const normalized = normalizeTitleText(title?.textContent ?? "");
-    if (normalized !== MORE_FROM_YOUTUBE_TITLE) {
-      return;
-    }
-    const section = title.closest(sectionSelector);
-    if (section) {
-      sections.add(section);
-    }
-  });
-
-  return Array.from(sections);
-};
+const findMoreFromYouTubeSections = (root = document) =>
+  findSectionsByTitle(
+    root,
+    MORE_FROM_YOUTUBE_TITLE,
+    moreFromYouTubeSelectors.sections,
+    moreFromYouTubeSelectors.titles
+  );
 
 const hideMoreFromYouTube = (root = document) => {
   findMoreFromYouTubeSections(root).forEach((section) => {
-    if (section && section.style.display !== "none") {
+    if (
+      section &&
+      section.style.display !== "none" &&
+      !shouldSkipElement(section)
+    ) {
       section.style.display = "none";
       section.setAttribute("data-better-youtube-more-from-hidden", "true");
     }
@@ -251,23 +324,211 @@ const revealMoreFromYouTube = (root = document) => {
     });
 };
 
+const BREAKING_NEWS_TITLES = ["breaking news"];
+
+const findBreakingNewsSections = (root = document) =>
+  findSectionsByTitle(
+    root,
+    BREAKING_NEWS_TITLES,
+    breakingNewsSelectors.sections,
+    breakingNewsSelectors.titles
+  );
+
+const hideBreakingNews = (root = document) => {
+  findBreakingNewsSections(root).forEach((section) => {
+    if (
+      section &&
+      section.style.display !== "none" &&
+      !shouldSkipElement(section)
+    ) {
+      section.style.display = "none";
+      section.setAttribute(
+        "data-better-youtube-breaking-news-hidden",
+        "true"
+      );
+    }
+  });
+};
+
+const revealBreakingNews = (root = document) => {
+  root
+    .querySelectorAll('[data-better-youtube-breaking-news-hidden="true"]')
+    .forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.style.removeProperty("display");
+      element.removeAttribute("data-better-youtube-breaking-news-hidden");
+    });
+};
+
+const MOVIES_TITLES = [
+  "movies",
+  "movies & tv",
+  "movies and tv",
+  "movies & shows",
+  "movies and shows",
+];
+
+const MOVIE_BADGE_KEYWORDS = [
+  "free with ads",
+  "buy or rent",
+  "rent",
+  "buy",
+  "premium",
+];
+
+const MOVIE_METADATA_KEYWORDS = [
+  "movie",
+  "movies & tv",
+  "movies and tv",
+  "movies & shows",
+  "movies and shows",
+];
+
+const MOVIE_ITEM_SELECTORS = [
+  "ytd-rich-item-renderer",
+  "ytd-video-renderer",
+  "ytd-grid-video-renderer",
+  "ytd-compact-video-renderer",
+];
+
+const findMoviesSections = (root = document) =>
+  findSectionsByTitle(
+    root,
+    MOVIES_TITLES,
+    moviesSelectors.sections,
+    moviesSelectors.titles
+  );
+
+const elementHasMovieBadge = (element) => {
+  if (!element) {
+    return false;
+  }
+  const badges = element.querySelectorAll(
+    "ytd-badge-supported-renderer, ytd-metadata-badge-renderer"
+  );
+  for (const badge of badges) {
+    const text = normalizeTitleText(badge.textContent ?? "");
+    if (MOVIE_BADGE_KEYWORDS.some((keyword) => text.includes(keyword))) {
+      return true;
+    }
+  }
+  const metadata = element.querySelectorAll(
+    "#metadata-line span, #metadata-line yt-formatted-string"
+  );
+  for (const meta of metadata) {
+    const text = normalizeTitleText(meta.textContent ?? "");
+    if (MOVIE_METADATA_KEYWORDS.some((keyword) => text.includes(keyword))) {
+      return true;
+    }
+  }
+  return false;
+};
+
+const findMovieItems = (root = document) => {
+  const selector = MOVIE_ITEM_SELECTORS.join(",");
+  const matches = new Set();
+  root.querySelectorAll(selector).forEach((element) => {
+    if (elementHasMovieBadge(element)) {
+      matches.add(element);
+    }
+  });
+  return Array.from(matches);
+};
+
+const hideMovies = (root = document) => {
+  const matches = new Set([
+    ...findMoviesSections(root),
+    ...findMovieItems(root),
+  ]);
+  matches.forEach((section) => {
+    if (
+      section &&
+      section.style.display !== "none" &&
+      !shouldSkipElement(section)
+    ) {
+      section.style.display = "none";
+      section.setAttribute("data-better-youtube-movies-hidden", "true");
+    }
+  });
+};
+
+const revealMovies = (root = document) => {
+  root
+    .querySelectorAll('[data-better-youtube-movies-hidden="true"]')
+    .forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.style.removeProperty("display");
+      element.removeAttribute("data-better-youtube-movies-hidden");
+    });
+};
+
 const hideHomeTopicTabs = (root = document) => {
+  if (!root.querySelector('ytd-browse[page-subtype="home"]')) {
+    return;
+  }
   const selectors = Object.values(homeTopicTabsSelectors).flatMap((group) =>
     Object.values(group).flat()
   );
 
+  const collapseElement = (element) => {
+    if (!element) {
+      return;
+    }
+    if (shouldSkipElement(element)) {
+      return;
+    }
+    if (element.id === "frosted-glass") {
+      const appRoot = root.querySelector("ytd-app");
+      if (appRoot && appRoot.classList.contains(CHIPBAR_CLASS)) {
+        appRoot.classList.remove(CHIPBAR_CLASS);
+        appRoot.setAttribute(CHIPBAR_CLASS_ATTRIBUTE, "true");
+      }
+      if (element.classList.contains(CHIPBAR_CLASS)) {
+        element.classList.remove(CHIPBAR_CLASS);
+        element.setAttribute(CHIPBAR_CLASS_ATTRIBUTE, "true");
+      }
+    }
+    element.style.display = "none";
+    element.style.height = "0";
+    element.style.minHeight = "0";
+    element.style.maxHeight = "0";
+    element.style.margin = "0";
+    element.style.padding = "0";
+    element.style.overflow = "hidden";
+    element.setAttribute("data-better-youtube-home-tabs-hidden", "true");
+  };
+
+  const collapseParentsIfNeeded = (element) => {
+    let current = element?.parentElement;
+    let depth = 0;
+    while (current && depth < 3) {
+      if (HOME_TABS_PARENT_IDS.has(current.id)) {
+        collapseElement(current);
+      }
+      current = current.parentElement;
+      depth += 1;
+    }
+  };
+
   selectors.forEach((selector) => {
     try {
       root.querySelectorAll(selector).forEach((element) => {
-        if (element && element.style.display !== "none") {
-          element.style.display = "none";
-          element.setAttribute("data-better-youtube-home-tabs-hidden", "true");
-        }
+        collapseElement(element);
+        collapseParentsIfNeeded(element);
       });
     } catch (error) {
       return;
     }
   });
+
+  const frostedGlass = root.querySelector("#frosted-glass");
+  if (frostedGlass) {
+    collapseElement(frostedGlass);
+  }
 };
 
 const revealHomeTopicTabs = (root = document) => {
@@ -278,14 +539,33 @@ const revealHomeTopicTabs = (root = document) => {
         return;
       }
       element.style.removeProperty("display");
+      element.style.removeProperty("height");
+      element.style.removeProperty("min-height");
+      element.style.removeProperty("max-height");
+      element.style.removeProperty("margin");
+      element.style.removeProperty("padding");
+      element.style.removeProperty("overflow");
       element.removeAttribute("data-better-youtube-home-tabs-hidden");
     });
+
+  const appRoot = root.querySelector("ytd-app");
+  if (appRoot?.getAttribute(CHIPBAR_CLASS_ATTRIBUTE) === "true") {
+    appRoot.classList.add(CHIPBAR_CLASS);
+    appRoot.removeAttribute(CHIPBAR_CLASS_ATTRIBUTE);
+  }
+  const frostedGlass = root.querySelector("#frosted-glass");
+  if (frostedGlass?.getAttribute(CHIPBAR_CLASS_ATTRIBUTE) === "true") {
+    frostedGlass.classList.add(CHIPBAR_CLASS);
+    frostedGlass.removeAttribute(CHIPBAR_CLASS_ATTRIBUTE);
+  }
 };
 
 const revealAllHiddenContent = (root = document) => {
   revealShorts(root);
   revealExplore(root);
   revealMoreFromYouTube(root);
+  revealBreakingNews(root);
+  revealMovies(root);
   revealHomeTopicTabs(root);
 };
 
@@ -312,7 +592,7 @@ const isYouTubeErrorState = (root = document) => {
 };
 
 const hideEnabledContent = (root = document) => {
-  if (errorStateActive) {
+  if (errorStateActive || navigationActive) {
     return;
   }
   if (shortsEnabled) {
@@ -323,6 +603,12 @@ const hideEnabledContent = (root = document) => {
   }
   if (moreFromYouTubeEnabled) {
     hideMoreFromYouTube(root);
+  }
+  if (breakingNewsEnabled) {
+    hideBreakingNews(root);
+  }
+  if (moviesEnabled) {
+    hideMovies(root);
   }
   if (homeTopicTabsEnabled) {
     hideHomeTopicTabs(root);
@@ -338,15 +624,19 @@ let domReadyListenerAttached = false;
 let shortsEnabled = false;
 let exploreEnabled = false;
 let moreFromYouTubeEnabled = false;
+let breakingNewsEnabled = false;
+let moviesEnabled = false;
 let homeTopicTabsEnabled = false;
 let errorStateActive = false;
 let errorStatePollTimer = null;
+let navigationActive = false;
 let playbackSpeedObserver = null;
 let playbackSpeedObserverScheduled = false;
 let playbackSpeedDomReadyListenerAttached = false;
 let lastPlaybackSpeedPlayer = null;
 let lastPlaybackSpeedVideo = null;
 let lastPlaybackSpeedVideoSrc = null;
+let playbackSpeedEnabled = false;
 
 const stopErrorStatePolling = () => {
   if (!errorStatePollTimer) {
@@ -386,6 +676,15 @@ const setErrorStateActive = (nextState) => {
 };
 
 const updateErrorState = () => setErrorStateActive(isYouTubeErrorState(document));
+
+const handleNavigationStart = () => {
+  navigationActive = true;
+};
+
+const handleNavigationFinish = () => {
+  navigationActive = false;
+  hideEnabledContent(document);
+};
 
 const scheduleHideContent = () => {
   if (!observerEnabled || observerScheduled) {
@@ -462,6 +761,8 @@ const PLAYBACK_SPEED_MAX = 5;
 const PLAYBACK_SPEED_STEP = 0.1;
 const PLAYBACK_SPEED_STYLE_ID = "better-youtube-playback-speed-style";
 const PLAYBACK_SPEED_STORAGE_KEY = "betterYouTubePlaybackSpeed";
+const PLAYBACK_SPEED_CONTROLS_STORAGE_KEY =
+  "betterYouTubePlaybackSpeedControlsEnabled";
 
 const playbackSpeedState = {
   container: null,
@@ -577,9 +878,11 @@ const ensurePlaybackSpeedStyles = () => {
     .better-youtube-speed-controls {
       display: inline-flex;
       align-items: center;
+      align-self: center;
       gap: 6px;
       padding: 0 6px;
       height: 28px;
+      margin: 0;
       border-radius: 999px;
       background: rgba(0, 0, 0, 0.6);
       border: 1px solid rgba(255, 255, 255, 0.2);
@@ -587,6 +890,7 @@ const ensurePlaybackSpeedStyles = () => {
       font-size: 12px;
       font-family: "YouTube Sans", "Roboto", "Arial", sans-serif;
       pointer-events: auto;
+      line-height: 1;
     }
 
     .better-youtube-speed-button {
@@ -732,6 +1036,9 @@ const initializePlaybackSpeedControls = (player, video) => {
 };
 
 const syncPlaybackSpeedTargets = () => {
+  if (!playbackSpeedEnabled) {
+    return;
+  }
   const player = findPlaybackSpeedPlayer();
   const video = findPlaybackSpeedVideo(player);
   if (!player || !video) {
@@ -753,7 +1060,7 @@ const syncPlaybackSpeedTargets = () => {
 };
 
 const schedulePlaybackSpeedSync = () => {
-  if (playbackSpeedObserverScheduled) {
+  if (!playbackSpeedEnabled || playbackSpeedObserverScheduled) {
     return;
   }
   playbackSpeedObserverScheduled = true;
@@ -764,14 +1071,14 @@ const schedulePlaybackSpeedSync = () => {
 };
 
 const handlePlaybackSpeedMutations = (mutations) => {
-  if (!mutations || mutations.length === 0) {
+  if (!playbackSpeedEnabled || !mutations || mutations.length === 0) {
     return;
   }
   schedulePlaybackSpeedSync();
 };
 
 const startPlaybackSpeedObserver = () => {
-  if (playbackSpeedObserver || !document.body) {
+  if (!playbackSpeedEnabled || playbackSpeedObserver || !document.body) {
     return;
   }
   playbackSpeedObserver = new MutationObserver(handlePlaybackSpeedMutations);
@@ -790,6 +1097,9 @@ const stopPlaybackSpeedObserver = () => {
 };
 
 const startPlaybackSpeedLifecycle = () => {
+  if (!playbackSpeedEnabled) {
+    return;
+  }
   stopPlaybackSpeedObserver();
   if (document.body) {
     startPlaybackSpeedObserver();
@@ -808,10 +1118,31 @@ const startPlaybackSpeedLifecycle = () => {
   schedulePlaybackSpeedSync();
 };
 
+const removePlaybackSpeedControls = () => {
+  if (playbackSpeedState.video && playbackSpeedState.onRateChange) {
+    playbackSpeedState.video.removeEventListener(
+      "ratechange",
+      playbackSpeedState.onRateChange
+    );
+  }
+  playbackSpeedState.video = null;
+  playbackSpeedState.onRateChange = null;
+  playbackSpeedState.slider = null;
+  playbackSpeedState.label = null;
+  playbackSpeedState.decrementButton = null;
+  playbackSpeedState.incrementButton = null;
+  if (playbackSpeedState.container) {
+    playbackSpeedState.container.remove();
+  }
+  playbackSpeedState.container = null;
+};
+
 const SHORTS_STORAGE_KEY = "betterYouTubeEnabled";
 const EXPLORE_STORAGE_KEY = "betterYouTubeHideExploreEnabled";
 const MORE_FROM_YOUTUBE_STORAGE_KEY =
   "betterYouTubeHideMoreFromYouTubeEnabled";
+const BREAKING_NEWS_STORAGE_KEY = "betterYouTubeHideBreakingNewsEnabled";
+const MOVIES_STORAGE_KEY = "betterYouTubeHideMoviesEnabled";
 const HOME_TOPIC_TABS_STORAGE_KEY = "betterYouTubeHideHomeTopicTabsEnabled";
 
 const normalizeEnabledValue = (value) =>
@@ -826,6 +1157,8 @@ const updateObserverState = () => {
     (shortsEnabled ||
       exploreEnabled ||
       moreFromYouTubeEnabled ||
+      breakingNewsEnabled ||
+      moviesEnabled ||
       homeTopicTabsEnabled);
   setObserverEnabled(shouldEnableObserver);
 };
@@ -853,6 +1186,26 @@ const setMoreFromYouTubeEnabled = (enabled) => {
   updateObserverState();
 };
 
+const setBreakingNewsEnabled = (enabled) => {
+  breakingNewsEnabled = Boolean(enabled);
+  if (breakingNewsEnabled && !errorStateActive) {
+    hideBreakingNews(document);
+  } else {
+    revealBreakingNews(document);
+  }
+  updateObserverState();
+};
+
+const setMoviesEnabled = (enabled) => {
+  moviesEnabled = Boolean(enabled);
+  if (moviesEnabled && !errorStateActive) {
+    hideMovies(document);
+  } else {
+    revealMovies(document);
+  }
+  updateObserverState();
+};
+
 const setHomeTopicTabsEnabled = (enabled) => {
   homeTopicTabsEnabled = Boolean(enabled);
   if (homeTopicTabsEnabled && !errorStateActive) {
@@ -861,6 +1214,16 @@ const setHomeTopicTabsEnabled = (enabled) => {
     revealHomeTopicTabs(document);
   }
   updateObserverState();
+};
+
+const setPlaybackSpeedEnabled = (enabled) => {
+  playbackSpeedEnabled = Boolean(enabled);
+  if (playbackSpeedEnabled) {
+    startPlaybackSpeedLifecycle();
+    return;
+  }
+  stopPlaybackSpeedObserver();
+  removePlaybackSpeedControls();
 };
 
 const setExploreEnabled = (enabled) => {
@@ -878,7 +1241,10 @@ const loadEnabledState = () => {
     setShortsEnabled(true);
     setExploreEnabled(true);
     setMoreFromYouTubeEnabled(true);
-    setHomeTopicTabsEnabled(false);
+    setBreakingNewsEnabled(true);
+    setMoviesEnabled(true);
+    setHomeTopicTabsEnabled(true);
+    setPlaybackSpeedEnabled(true);
     return;
   }
 
@@ -887,7 +1253,10 @@ const loadEnabledState = () => {
       [SHORTS_STORAGE_KEY]: true,
       [EXPLORE_STORAGE_KEY]: true,
       [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
-      [HOME_TOPIC_TABS_STORAGE_KEY]: false,
+      [BREAKING_NEWS_STORAGE_KEY]: true,
+      [MOVIES_STORAGE_KEY]: true,
+      [HOME_TOPIC_TABS_STORAGE_KEY]: true,
+      [PLAYBACK_SPEED_CONTROLS_STORAGE_KEY]: true,
     },
     (result) => {
       const shortsEnabledValue = normalizeEnabledValue(
@@ -899,14 +1268,29 @@ const loadEnabledState = () => {
       const moreFromEnabledValue = normalizeEnabledValue(
         result[MORE_FROM_YOUTUBE_STORAGE_KEY]
       );
+      const breakingNewsEnabledValue = normalizeEnabledValueWithDefault(
+        result[BREAKING_NEWS_STORAGE_KEY],
+        false
+      );
+      const moviesEnabledValue = normalizeEnabledValueWithDefault(
+        result[MOVIES_STORAGE_KEY],
+        false
+      );
       const homeTopicTabsEnabledValue = normalizeEnabledValueWithDefault(
         result[HOME_TOPIC_TABS_STORAGE_KEY],
-        false
+        true
+      );
+      const playbackSpeedEnabledValue = normalizeEnabledValueWithDefault(
+        result[PLAYBACK_SPEED_CONTROLS_STORAGE_KEY],
+        true
       );
       setShortsEnabled(shortsEnabledValue);
       setExploreEnabled(exploreEnabledValue);
       setMoreFromYouTubeEnabled(moreFromEnabledValue);
+      setBreakingNewsEnabled(breakingNewsEnabledValue);
+      setMoviesEnabled(moviesEnabledValue);
       setHomeTopicTabsEnabled(homeTopicTabsEnabledValue);
+      setPlaybackSpeedEnabled(playbackSpeedEnabledValue);
     }
   );
 };
@@ -933,12 +1317,33 @@ const handleStorageChanges = (changes, areaName) => {
     );
     setMoreFromYouTubeEnabled(nextMoreFromValue);
   }
+  if (changes[BREAKING_NEWS_STORAGE_KEY]) {
+    const nextBreakingValue = normalizeEnabledValueWithDefault(
+      changes[BREAKING_NEWS_STORAGE_KEY].newValue,
+      false
+    );
+    setBreakingNewsEnabled(nextBreakingValue);
+  }
+  if (changes[MOVIES_STORAGE_KEY]) {
+    const nextMoviesValue = normalizeEnabledValueWithDefault(
+      changes[MOVIES_STORAGE_KEY].newValue,
+      false
+    );
+    setMoviesEnabled(nextMoviesValue);
+  }
   if (changes[HOME_TOPIC_TABS_STORAGE_KEY]) {
     const nextHomeTabsValue = normalizeEnabledValueWithDefault(
       changes[HOME_TOPIC_TABS_STORAGE_KEY].newValue,
-      false
+      true
     );
     setHomeTopicTabsEnabled(nextHomeTabsValue);
+  }
+  if (changes[PLAYBACK_SPEED_CONTROLS_STORAGE_KEY]) {
+    const nextPlaybackSpeedValue = normalizeEnabledValueWithDefault(
+      changes[PLAYBACK_SPEED_CONTROLS_STORAGE_KEY].newValue,
+      true
+    );
+    setPlaybackSpeedEnabled(nextPlaybackSpeedValue);
   }
 };
 
@@ -946,8 +1351,9 @@ window.BetterYouTubeSetObserverEnabled = setObserverEnabled;
 
 updateErrorState();
 loadEnabledState();
-startPlaybackSpeedLifecycle();
 window.addEventListener("yt-navigate-finish", schedulePlaybackSpeedSync);
+window.addEventListener("yt-navigate-start", handleNavigationStart);
+window.addEventListener("yt-navigate-finish", handleNavigationFinish);
 window.addEventListener("yt-page-data-updated", schedulePlaybackSpeedSync);
 window.addEventListener("yt-player-updated", schedulePlaybackSpeedSync);
 if (chrome?.storage?.onChanged) {
