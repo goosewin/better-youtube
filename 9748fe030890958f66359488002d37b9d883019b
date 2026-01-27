@@ -1,0 +1,23 @@
+README.md
+  40acbf1b2130350e 53
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.0.37",
+  "base_commit_sha": "9748fe030890958f66359488002d37b9d883019b",
+  "prompts": {
+    "40acbf1b2130350e": {
+      "agent_id": {
+        "tool": "opencode",
+        "id": "ses_3ff362561ffevT2e56u2Qra6mM",
+        "model": "opencode/kimi-k2.5"
+      },
+      "human_author": "goosewin <daniel@webline.app>",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0
+    }
+  }
+}
