@@ -101,7 +101,8 @@ const firefoxManifest = {
       data_collection_permissions: {
         required: ["none"]
       }
-    }
+    },
+    gecko_android: {}
   }
 };
 
