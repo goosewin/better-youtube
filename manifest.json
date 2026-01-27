@@ -2,13 +2,15 @@
   "manifest_version": 3,
   "name": "Better YouTube",
   "description": "Hide YouTube Shorts across the site.",
-  "version": "0.1.1",
+  "version": "0.1.2",
+  "author": "Dan Goosewin",
+  "homepage_url": "https://goosewin.com",
   "permissions": ["storage"],
   "host_permissions": ["https://www.youtube.com/*"],
   "content_scripts": [
     {
       "matches": ["https://www.youtube.com/*"],
-      "js": ["content-script.js"],
+      "js": ["browser-polyfill.js", "content-script.js"],
       "run_at": "document_idle"
     }
   ],
@@ -24,5 +26,10 @@
     "16": "icons/icon-16.png",
     "48": "icons/icon-48.png",
     "128": "icons/icon-128.png"
+  },
+  "browser_specific_settings": {
+    "gecko": {
+      "id": "better-youtube@goosewin.com"
+    }
   }
 }
