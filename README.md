@@ -2,10 +2,6 @@
 
 A cross-browser extension to hide YouTube Shorts and extend playback speed controls.
 
-**Author:** Dan Goosewin ([goosewin.com](https://goosewin.com))  
-**Contact:** dan@goosewin.com  
-**Version:** 0.1.2
-
 ## Table of Contents
 
 - [Features](#features)
