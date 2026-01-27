@@ -80,6 +80,11 @@ const breakingNewsSelectors = {
   titles: feedTitleSelectors,
 };
 
+const playablesSelectors = {
+  sections: feedSectionSelectors,
+  titles: feedTitleSelectors,
+};
+
 const moviesSelectors = {
   sections: [...feedSectionSelectors, ...sidebarSectionSelectors],
   titles: [...feedTitleSelectors, ...sidebarTitleSelectors],
@@ -362,6 +367,41 @@ const revealBreakingNews = (root = document) => {
     });
 };
 
+const PLAYABLES_TITLES = ["playables", "youtube playables"];
+
+const findPlayablesSections = (root = document) =>
+  findSectionsByTitle(
+    root,
+    PLAYABLES_TITLES,
+    playablesSelectors.sections,
+    playablesSelectors.titles
+  );
+
+const hidePlayables = (root = document) => {
+  findPlayablesSections(root).forEach((section) => {
+    if (
+      section &&
+      section.style.display !== "none" &&
+      !shouldSkipElement(section)
+    ) {
+      section.style.display = "none";
+      section.setAttribute("data-better-youtube-playables-hidden", "true");
+    }
+  });
+};
+
+const revealPlayables = (root = document) => {
+  root
+    .querySelectorAll('[data-better-youtube-playables-hidden="true"]')
+    .forEach((element) => {
+      if (!element) {
+        return;
+      }
+      element.style.removeProperty("display");
+      element.removeAttribute("data-better-youtube-playables-hidden");
+    });
+};
+
 const MOVIES_TITLES = [
   "movies",
   "movies & tv",
@@ -565,6 +605,7 @@ const revealAllHiddenContent = (root = document) => {
   revealExplore(root);
   revealMoreFromYouTube(root);
   revealBreakingNews(root);
+  revealPlayables(root);
   revealMovies(root);
   revealHomeTopicTabs(root);
 };
@@ -607,6 +648,9 @@ const hideEnabledContent = (root = document) => {
   if (breakingNewsEnabled) {
     hideBreakingNews(root);
   }
+  if (playablesEnabled) {
+    hidePlayables(root);
+  }
   if (moviesEnabled) {
     hideMovies(root);
   }
@@ -625,6 +669,7 @@ let shortsEnabled = false;
 let exploreEnabled = false;
 let moreFromYouTubeEnabled = false;
 let breakingNewsEnabled = false;
+let playablesEnabled = false;
 let moviesEnabled = false;
 let homeTopicTabsEnabled = false;
 let errorStateActive = false;
@@ -1142,6 +1187,7 @@ const EXPLORE_STORAGE_KEY = "betterYouTubeHideExploreEnabled";
 const MORE_FROM_YOUTUBE_STORAGE_KEY =
   "betterYouTubeHideMoreFromYouTubeEnabled";
 const BREAKING_NEWS_STORAGE_KEY = "betterYouTubeHideBreakingNewsEnabled";
+const PLAYABLES_STORAGE_KEY = "betterYouTubeHidePlayablesEnabled";
 const MOVIES_STORAGE_KEY = "betterYouTubeHideMoviesEnabled";
 const HOME_TOPIC_TABS_STORAGE_KEY = "betterYouTubeHideHomeTopicTabsEnabled";
 
@@ -1158,6 +1204,7 @@ const updateObserverState = () => {
       exploreEnabled ||
       moreFromYouTubeEnabled ||
       breakingNewsEnabled ||
+      playablesEnabled ||
       moviesEnabled ||
       homeTopicTabsEnabled);
   setObserverEnabled(shouldEnableObserver);
@@ -1192,6 +1239,16 @@ const setBreakingNewsEnabled = (enabled) => {
     hideBreakingNews(document);
   } else {
     revealBreakingNews(document);
+  }
+  updateObserverState();
+};
+
+const setPlayablesEnabled = (enabled) => {
+  playablesEnabled = Boolean(enabled);
+  if (playablesEnabled && !errorStateActive) {
+    hidePlayables(document);
+  } else {
+    revealPlayables(document);
   }
   updateObserverState();
 };
@@ -1242,6 +1299,7 @@ const loadEnabledState = () => {
     setExploreEnabled(true);
     setMoreFromYouTubeEnabled(true);
     setBreakingNewsEnabled(true);
+    setPlayablesEnabled(true);
     setMoviesEnabled(true);
     setHomeTopicTabsEnabled(true);
     setPlaybackSpeedEnabled(true);
@@ -1254,6 +1312,7 @@ const loadEnabledState = () => {
       [EXPLORE_STORAGE_KEY]: true,
       [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
       [BREAKING_NEWS_STORAGE_KEY]: true,
+      [PLAYABLES_STORAGE_KEY]: true,
       [MOVIES_STORAGE_KEY]: true,
       [HOME_TOPIC_TABS_STORAGE_KEY]: true,
       [PLAYBACK_SPEED_CONTROLS_STORAGE_KEY]: true,
@@ -1272,6 +1331,9 @@ const loadEnabledState = () => {
         result[BREAKING_NEWS_STORAGE_KEY],
         false
       );
+      const playablesEnabledValue = normalizeEnabledValue(
+        result[PLAYABLES_STORAGE_KEY]
+      );
       const moviesEnabledValue = normalizeEnabledValueWithDefault(
         result[MOVIES_STORAGE_KEY],
         false
@@ -1288,6 +1350,7 @@ const loadEnabledState = () => {
       setExploreEnabled(exploreEnabledValue);
       setMoreFromYouTubeEnabled(moreFromEnabledValue);
       setBreakingNewsEnabled(breakingNewsEnabledValue);
+      setPlayablesEnabled(playablesEnabledValue);
       setMoviesEnabled(moviesEnabledValue);
       setHomeTopicTabsEnabled(homeTopicTabsEnabledValue);
       setPlaybackSpeedEnabled(playbackSpeedEnabledValue);
@@ -1323,6 +1386,12 @@ const handleStorageChanges = (changes, areaName) => {
       false
     );
     setBreakingNewsEnabled(nextBreakingValue);
+  }
+  if (changes[PLAYABLES_STORAGE_KEY]) {
+    const nextPlayablesValue = normalizeEnabledValue(
+      changes[PLAYABLES_STORAGE_KEY].newValue
+    );
+    setPlayablesEnabled(nextPlayablesValue);
   }
   if (changes[MOVIES_STORAGE_KEY]) {
     const nextMoviesValue = normalizeEnabledValueWithDefault(

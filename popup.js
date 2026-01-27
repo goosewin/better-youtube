@@ -5,6 +5,7 @@ const EXPLORE_STORAGE_KEY = "betterYouTubeHideExploreEnabled";
 const MORE_FROM_YOUTUBE_STORAGE_KEY =
   "betterYouTubeHideMoreFromYouTubeEnabled";
 const BREAKING_NEWS_STORAGE_KEY = "betterYouTubeHideBreakingNewsEnabled";
+const PLAYABLES_STORAGE_KEY = "betterYouTubeHidePlayablesEnabled";
 const MOVIES_STORAGE_KEY = "betterYouTubeHideMoviesEnabled";
 const HOME_TOPIC_TABS_STORAGE_KEY = "betterYouTubeHideHomeTopicTabsEnabled";
 const PLAYBACK_SPEED_CONTROLS_STORAGE_KEY =
@@ -19,6 +20,7 @@ const getMoreFromToggle = () =>
   document.getElementById("more-from-youtube-toggle");
 const getBreakingNewsToggle = () =>
   document.getElementById("breaking-news-toggle");
+const getPlayablesToggle = () => document.getElementById("playables-toggle");
 const getMoviesToggle = () => document.getElementById("movies-toggle");
 const getHomeTabsToggle = () => document.getElementById("home-tabs-toggle");
 const getPlaybackSpeedToggle = () =>
@@ -36,6 +38,7 @@ const loadToggleState = () => {
   const exploreToggle = getExploreToggle();
   const moreFromToggle = getMoreFromToggle();
   const breakingNewsToggle = getBreakingNewsToggle();
+  const playablesToggle = getPlayablesToggle();
   const moviesToggle = getMoviesToggle();
   const homeTabsToggle = getHomeTabsToggle();
   const playbackSpeedToggle = getPlaybackSpeedToggle();
@@ -44,6 +47,7 @@ const loadToggleState = () => {
     setToggleState(exploreToggle, true);
     setToggleState(moreFromToggle, true);
     setToggleState(breakingNewsToggle, true);
+    setToggleState(playablesToggle, true);
     setToggleState(moviesToggle, true);
     setToggleState(homeTabsToggle, true);
     setToggleState(playbackSpeedToggle, true);
@@ -56,6 +60,7 @@ const loadToggleState = () => {
       [EXPLORE_STORAGE_KEY]: true,
       [MORE_FROM_YOUTUBE_STORAGE_KEY]: true,
       [BREAKING_NEWS_STORAGE_KEY]: true,
+      [PLAYABLES_STORAGE_KEY]: true,
       [MOVIES_STORAGE_KEY]: true,
       [HOME_TOPIC_TABS_STORAGE_KEY]: true,
       [PLAYBACK_SPEED_CONTROLS_STORAGE_KEY]: true,
@@ -76,6 +81,10 @@ const loadToggleState = () => {
       setToggleState(
         breakingNewsToggle,
         normalizeEnabledValue(result[BREAKING_NEWS_STORAGE_KEY])
+      );
+      setToggleState(
+        playablesToggle,
+        normalizeEnabledValue(result[PLAYABLES_STORAGE_KEY])
       );
       setToggleState(
         moviesToggle,
@@ -123,6 +132,14 @@ const handleBreakingNewsToggleChange = (event) => {
   }
   const nextValue = Boolean(event.target.checked);
   chrome.storage.sync.set({ [BREAKING_NEWS_STORAGE_KEY]: nextValue });
+};
+
+const handlePlayablesToggleChange = (event) => {
+  if (!chrome?.storage?.sync) {
+    return;
+  }
+  const nextValue = Boolean(event.target.checked);
+  chrome.storage.sync.set({ [PLAYABLES_STORAGE_KEY]: nextValue });
 };
 
 const handleMoviesToggleChange = (event) => {
@@ -181,6 +198,13 @@ const handleStorageChanges = (changes, areaName) => {
       normalizeEnabledValue(changes[BREAKING_NEWS_STORAGE_KEY].newValue)
     );
   }
+  if (changes[PLAYABLES_STORAGE_KEY]) {
+    const playablesToggle = getPlayablesToggle();
+    setToggleState(
+      playablesToggle,
+      normalizeEnabledValue(changes[PLAYABLES_STORAGE_KEY].newValue)
+    );
+  }
   if (changes[MOVIES_STORAGE_KEY]) {
     const moviesToggle = getMoviesToggle();
     setToggleState(
@@ -225,6 +249,10 @@ document.addEventListener("DOMContentLoaded", () => {
       "change",
       handleBreakingNewsToggleChange
     );
+  }
+  const playablesToggle = getPlayablesToggle();
+  if (playablesToggle) {
+    playablesToggle.addEventListener("change", handlePlayablesToggleChange);
   }
   const moviesToggle = getMoviesToggle();
   if (moviesToggle) {

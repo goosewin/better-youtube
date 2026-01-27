@@ -20,7 +20,7 @@ actually useful.
 ## What it does
 
 - Hides Shorts across the site
-- Hides Explore, More from YouTube, Breaking News, Movies, and Home topic tabs
+- Hides Explore, More from YouTube, Breaking News, Playables, Movies, and Home topic tabs
 - Adds extended playback speed controls (0.1x to 5x)
 - All features are toggleable in the popup
 
