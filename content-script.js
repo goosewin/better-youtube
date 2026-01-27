@@ -1,3 +1,15 @@
+/**
+ * Better YouTube - Content Script
+ *
+ * Author: Dan Goosewin <dan@goosewin.com>
+ * Website: https://goosewin.com
+ * Version: 0.1.2
+ * License: MIT
+ *
+ * This content script runs on YouTube pages to hide Shorts and other
+ * unwanted content based on user preferences.
+ */
+
 "use strict";
 
 // Centralized selectors for Shorts-related UI elements across YouTube pages.
