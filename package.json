@@ -29,6 +29,7 @@
     "test": "npm run test:chrome && npm run test:firefox",
     "test:chrome": "npm run test:ext-9:chrome && npm run test:ext-10:chrome",
     "test:firefox": "npm run test:ext-9:firefox && npm run test:ext-10:firefox",
+    "test:search": "node tests/search.suite.test.mjs",
     "test:ext-9:chrome": "node tests/ext-9.integration.test.mjs",
     "test:ext-9:firefox": "node tests/ext-9.firefox.test.mjs",
     "test:ext-10:chrome": "node tests/ext-10.integration.test.mjs",

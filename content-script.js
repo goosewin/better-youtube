@@ -39,7 +39,13 @@ const shortsSelectors = {
     ],
     results: [
       "ytd-video-renderer:has(a[href^=\"/shorts/\"])",
-      "ytd-item-section-renderer:has(a[href^=\"/shorts/\"])",
+      // New YouTube search UI sometimes renders Shorts using view-model elements
+      // instead of classic `ytd-*-renderer` cards.
+      "ytm-shorts-lockup-view-model",
+      "ytm-shorts-lockup-view-model-v2",
+      // Avoid hiding `ytd-item-section-renderer` on search pages: it can contain
+      // the entire result set (including non-Shorts), which makes search appear
+      // stuck in an infinite loading state.
     ],
   },
   subscriptions: {
@@ -148,6 +154,8 @@ window.BetterYouTubeExtensionId = chrome?.runtime?.id ?? null;
 
 const SHORTS_SELECTORS_ATTRIBUTE = "data-better-youtube-shorts-selectors";
 const EXTENSION_ID_ATTRIBUTE = "data-better-youtube-extension-id";
+const SHORTS_ENABLED_ATTRIBUTE = "data-better-youtube-shorts-enabled";
+const OBSERVER_ENABLED_ATTRIBUTE = "data-better-youtube-observer-enabled";
 
 const writePageMetadata = () => {
   const root = document.documentElement;
@@ -785,6 +793,14 @@ const stopObserver = () => {
 
 const setObserverEnabled = (enabled) => {
   observerEnabled = Boolean(enabled);
+  try {
+    document.documentElement?.setAttribute(
+      OBSERVER_ENABLED_ATTRIBUTE,
+      observerEnabled ? "true" : "false"
+    );
+  } catch (error) {
+    // ignore
+  }
   if (observerEnabled) {
     stopObserver();
     if (document.body) {
@@ -1224,6 +1240,14 @@ const updateObserverState = () => {
 
 const setShortsEnabled = (enabled) => {
   shortsEnabled = Boolean(enabled);
+  try {
+    document.documentElement?.setAttribute(
+      SHORTS_ENABLED_ATTRIBUTE,
+      shortsEnabled ? "true" : "false"
+    );
+  } catch (error) {
+    // ignore
+  }
   if (!shortsEnabled) {
     revealShorts(document);
     updateObserverState();

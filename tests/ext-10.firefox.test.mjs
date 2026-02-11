@@ -95,6 +95,79 @@ const evaluateSubscriptionsSignInPrompt = () => {
   return text.includes("sign in");
 };
 
+const waitForSearchResultsToRender = async (page) => {
+  await page.waitForFunction(
+    () => {
+      const isVisible = (element) => {
+        if (!element) {
+          return false;
+        }
+        const style = getComputedStyle(element);
+        if (
+          style.display === "none" ||
+          style.visibility === "hidden" ||
+          style.opacity === "0"
+        ) {
+          return false;
+        }
+        const rect = element.getBoundingClientRect();
+        return rect.width > 0 && rect.height > 0;
+      };
+
+      const searchRoot = document.querySelector(
+        "ytd-two-column-search-results-renderer"
+      );
+      if (!isVisible(searchRoot)) {
+        return false;
+      }
+
+      const videos = Array.from(
+        document.querySelectorAll("ytd-video-renderer")
+      ).filter(isVisible);
+      return videos.length > 0;
+    },
+    null,
+    { timeout: 15000 }
+  );
+};
+
+const evaluateVisibleNonShortSearchResults = () => {
+  const isVisible = (element) => {
+    if (!element) {
+      return false;
+    }
+    const style = getComputedStyle(element);
+    if (
+      style.display === "none" ||
+      style.visibility === "hidden" ||
+      style.opacity === "0"
+    ) {
+      return false;
+    }
+    const rect = element.getBoundingClientRect();
+    return rect.width > 0 && rect.height > 0;
+  };
+
+  const candidates = Array.from(document.querySelectorAll("ytd-video-renderer"))
+    .filter(isVisible)
+    .filter((renderer) => {
+      const link = renderer.querySelector("a#video-title-link, a#video-title");
+      const href = link?.getAttribute("href") || "";
+      return href.startsWith("/watch");
+    });
+
+  return { visibleNonShortCount: candidates.length };
+};
+
+const assertSearchResultsVisible = (results, contextLabel) => {
+  const count = results?.visibleNonShortCount ?? 0;
+  if (count <= 0) {
+    throw new Error(
+      `Expected visible non-Shorts search results in ${contextLabel}, but found ${count}.`
+    );
+  }
+};
+
 const scrollForMoreResults = async (page, iterations = 3) => {
   for (let index = 0; index < iterations; index += 1) {
     await page.evaluate(() => {
@@ -159,6 +232,11 @@ const run = async () => {
       waitUntil: "domcontentloaded",
     });
     await activePage.waitForTimeout(6000);
+    await waitForSearchResultsToRender(activePage);
+    assertSearchResultsVisible(
+      await activePage.evaluate(evaluateVisibleNonShortSearchResults),
+      "search results initial load"
+    );
 
     const searchResults = await activePage.evaluate(evaluateShortsHiding, [
       "search",
@@ -166,6 +244,10 @@ const run = async () => {
     assertNoVisibleShorts(searchResults, "search results");
 
     await scrollForMoreResults(activePage);
+    assertSearchResultsVisible(
+      await activePage.evaluate(evaluateVisibleNonShortSearchResults),
+      "search results after scrolling"
+    );
     const searchAfterScroll = await activePage.evaluate(evaluateShortsHiding, [
       "search",
     ]);
