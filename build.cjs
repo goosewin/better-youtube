@@ -5,7 +5,7 @@
  * 
  * Author: Dan Goosewin <dan@goosewin.com>
  * Website: https://goosewin.com
- * Version: 0.1.2
+ * Version: 0.1.3
  */
 
 const fs = require('fs');
@@ -16,7 +16,7 @@ const BUILD_DIR = './dist';
 
 // Extension metadata
 const EXTENSION_NAME = 'Better YouTube';
-const EXTENSION_VERSION = '0.1.2';
+const EXTENSION_VERSION = '0.1.3';
 const EXTENSION_AUTHOR = 'Dan Goosewin';
 const EXTENSION_HOMEPAGE = 'https://goosewin.com';
 const EXTENSION_DESCRIPTION = 'Hide YouTube Shorts across the site.';

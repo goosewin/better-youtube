@@ -3,7 +3,7 @@
  *
  * Author: Dan Goosewin <dan@goosewin.com>
  * Website: https://goosewin.com
- * Version: 0.1.2
+ * Version: 0.1.3
  * License: MIT
  *
  * This content script runs on YouTube pages to hide Shorts and other
