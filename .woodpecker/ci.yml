@@ -1,0 +1,17 @@
+when:
+  event: [push, pull_request, manual]
+
+steps:
+  critical:
+    image: oven/bun:1.3.14-debian
+    pull: true
+    environment:
+      CI: "true"
+      NEXT_TELEMETRY_DISABLED: "1"
+      TURBO_TELEMETRY_DISABLED: "1"
+    commands:
+      - bun install --frozen-lockfile
+      - bun run lint:package-manager
+      - bun audit --audit-level=high
+      - bun run test
+      - bun run build

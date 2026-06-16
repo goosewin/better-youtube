@@ -35,12 +35,16 @@
     "test:ext-10:chrome": "node tests/ext-10.integration.test.mjs",
     "test:ext-10:firefox": "node tests/ext-10.firefox.test.mjs",
     "test:ext-11:chrome": "node tests/ext-11.integration.test.mjs",
-    "test:ext-11:firefox": "node tests/ext-11.firefox.test.mjs"
+    "test:ext-11:firefox": "node tests/ext-11.firefox.test.mjs",
+    "lint:package-manager": "bun run scripts/enforce-bun-policy.ts",
+    "preinstall": "bun run scripts/enforce-bun-policy.ts --preinstall"
   },
   "devDependencies": {
     "playwright": "^1.42.1"
   },
   "engines": {
-    "node": ">=16.0.0"
-  }
+    "node": ">=16.0.0",
+    "bun": ">=1.3.14"
+  },
+  "packageManager": "bun@1.3.14"
 }
